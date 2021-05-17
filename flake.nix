@@ -14,7 +14,7 @@
       let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [ self.overlay ];
+          #overlays = [ self.overlay ];
         };
         python = pkgs.python3;
         pythonPackages = python.pkgs;
@@ -34,11 +34,6 @@
             flake8
             pylint
           ];
-
-          #shellHook = ''
-            ## fix libstdc++.so not found error
-            #export LD_LIBRARY_PATH=${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH
-          #'';
         };
       });
 }
