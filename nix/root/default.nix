@@ -35,14 +35,15 @@
 
 stdenv.mkDerivation rec {
   pname = "root";
-  version = "6.24.00";
+  version = "6.22.08";
 
   src = fetchurl {
     url = "https://root.cern.ch/download/root_v${version}.source.tar.gz";
     sha256 = "0vrgi83hrw4n9zgx873fn4ba3vk54slrwk1cl4cc4plgxzv1y1kg";
   };
 
-  nativeBuildInputs = [ makeWrapper cmake pkg-config llvm_5.dev ];
+  #nativeBuildInputs = [ makeWrapper cmake pkg-config llvm_5.dev ];  # llvm_5 has no attr 'dev'
+  nativeBuildInputs = [ makeWrapper cmake pkg-config llvm_5 ];
   buildInputs = [ ftgl gl2ps glew pcre zlib zstd llvm_5 libxml2 lz4 xz gsl xxHash libAfterImage giflib libjpeg libtiff libpng python.pkgs.numpy ]
     ++ lib.optionals (!stdenv.isDarwin) [ libX11 libXpm libXft libXext libGLU libGL ]
     ++ lib.optionals (stdenv.isDarwin) [ Cocoa OpenGL ]
@@ -78,7 +79,7 @@ stdenv.mkDerivation rec {
     "-Dfftw3=OFF"
     "-Dfitsio=OFF"
     "-Dfortran=OFF"
-    "-Dimt=ON"
+    "-Dimt=OFF"
     "-Dgfal=OFF"
     "-Dgviz=OFF"
     "-Dhdfs=OFF"
