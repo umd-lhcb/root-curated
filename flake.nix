@@ -18,14 +18,14 @@
         };
         python = pkgs.python3;
         pythonPackages = python.pkgs;
-        root = pkgs.root;
       in
       {
         devShell = pkgs.mkShell {
           name = "root-curated";
           buildInputs = with pythonPackages; [
             pkgs.clang-tools # For clang-format
-            root
+            pkgs.root
+            #pkgs.nix-info  # For bug report
 
             # Auto completion
             jedi
