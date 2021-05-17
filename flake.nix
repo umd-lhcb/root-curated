@@ -33,7 +33,6 @@
             # Linters
             flake8
             pylint
-
           ];
 
           #shellHook = ''
