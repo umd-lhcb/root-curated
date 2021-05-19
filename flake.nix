@@ -14,7 +14,7 @@
       let
         pkgs = import nixpkgs {
           inherit system;
-          #overlays = [ self.overlay ];
+          overlays = [ self.overlay ];
         };
         python = pkgs.python3;
         pythonPackages = python.pkgs;
@@ -26,13 +26,6 @@
             pkgs.clang-tools # For clang-format
             pkgs.root
             #pkgs.nix-info  # For bug report
-
-            # Auto completion
-            jedi
-
-            # Linters
-            flake8
-            pylint
           ];
         };
       });
