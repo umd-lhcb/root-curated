@@ -32,6 +32,7 @@
 , Cocoa
 , OpenGL
 , noSplash ? false
+, implicitMT ? false
 }:
 
 stdenv.mkDerivation rec {
@@ -43,11 +44,11 @@ stdenv.mkDerivation rec {
     sha256 = "0vrgi83hrw4n9zgx873fn4ba3vk54slrwk1cl4cc4plgxzv1y1kg";
   };
 
-  #nativeBuildInputs = [ makeWrapper cmake pkg-config llvm_5.dev ];  # llvm_5 has no attr 'dev'
-  nativeBuildInputs = [ makeWrapper cmake pkg-config llvm_5 ];
-  buildInputs = [ ftgl gl2ps glew pcre zlib zstd llvm_5 libxml2 lz4 xz gsl xxHash libAfterImage giflib libjpeg libtiff libpng python.pkgs.numpy tbb ]
+  nativeBuildInputs = [ makeWrapper cmake pkg-config llvm_5.dev ];
+  buildInputs = [ ftgl gl2ps glew pcre zlib zstd llvm_5 libxml2 lz4 xz gsl xxHash libAfterImage giflib libjpeg libtiff libpng python.pkgs.numpy ]
     ++ lib.optionals (!stdenv.isDarwin) [ libX11 libXpm libXft libXext libGLU libGL ]
     ++ lib.optionals (stdenv.isDarwin) [ Cocoa OpenGL ]
+    ++ lib.optionals (implicitMT) [ tbb ]
   ;
 
   patches = [
@@ -80,7 +81,6 @@ stdenv.mkDerivation rec {
     "-Dfftw3=OFF"
     "-Dfitsio=OFF"
     "-Dfortran=OFF"
-    "-Dimt=ON"
     "-Dgfal=OFF"
     "-Dgviz=OFF"
     "-Dhdfs=OFF"
@@ -100,6 +100,7 @@ stdenv.mkDerivation rec {
     "-Dvdt=OFF"
     "-Dxml=ON"
     "-Dxrootd=OFF"
+    "-DCMAKE_CXX_STANDARD=17"  # Manually request C++17 standard, but NOT ROOT 7
   ]
   ++ lib.optional (stdenv.cc.libc != null) "-DC_INCLUDE_DIRS=${lib.getDev stdenv.cc.libc}/include"
   ++ lib.optionals stdenv.isDarwin [
@@ -109,7 +110,10 @@ stdenv.mkDerivation rec {
     # fatal error: module map file '/nix/store/<hash>-Libsystem-osx-10.12.6/include/module.modulemap' not found
     # fatal error: could not build module '_Builtin_intrinsics'
     "-Druntime_cxxmodules=OFF"
-  ];
+  ]
+  ++ lib.optional (implicitMT) "-Dimt=ON"
+  ++ lib.optional (!implicitMT) "-Dimt=OFF"
+  ;
 
   postInstall = ''
     for prog in rootbrowse rootcp rooteventselector rootls rootmkdir rootmv rootprint rootrm rootslimtree; do
