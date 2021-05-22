@@ -25,6 +25,7 @@
           buildInputs = with pythonPackages; [
             pkgs.clang-tools # For clang-format
             pkgs.root
+            python  # For ROOT module test
             #pkgs.nix-info  # For bug report
           ];
         };
