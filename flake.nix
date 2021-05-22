@@ -1,7 +1,7 @@
 {
   description = "A curated version of ROOT 6 w/ HistFactory patches.";
 
-  inputs = rec {
+  inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
