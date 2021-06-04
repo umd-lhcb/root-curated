@@ -19,7 +19,10 @@
         python = pkgs.python3;
         pythonPackages = python.pkgs;
       in
-      {
+      rec {
+        packages = flake-utils.lib.flattenTree {
+          dev-shell = devShell.inputDerivation;
+        };
         devShell = pkgs.mkShell {
           name = "root-curated";
           buildInputs = with pythonPackages; [
