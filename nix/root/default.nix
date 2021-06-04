@@ -1,8 +1,10 @@
 { stdenv
+, breakpointHook
 , lib
 , fetchurl
 , makeWrapper
 , cmake
+, git
 , ftgl
 , gl2ps
 , glew
@@ -15,6 +17,7 @@
 , libGLU
 , libGL
 , libxml2
+, expat
 , lz4
 , xz
 , pcre
@@ -28,6 +31,7 @@
 , libjpeg
 , libtiff
 , libpng
+, nlohmann_json
 , tbb
 , Cocoa
 , OpenGL
@@ -44,9 +48,9 @@ stdenv.mkDerivation rec {
     sha256 = "12crjzd7pzx5qpk2pb3z0rhmxlw5gsqaqzfl48qiq8c9l940b8wx";
   };
 
-  nativeBuildInputs = [ makeWrapper cmake pkg-config llvm_9.dev ];
-  buildInputs = [ ftgl gl2ps glew pcre zlib zstd llvm_9 libxml2 lz4 xz gsl xxHash libAfterImage giflib libjpeg libtiff libpng python.pkgs.numpy ]
-    ++ lib.optionals (!stdenv.isDarwin) [ libX11 libXpm libXft libXext libGLU libGL ]
+  nativeBuildInputs = [ makeWrapper cmake pkg-config llvm_9.dev git breakpointHook ];
+  buildInputs = [ ftgl gl2ps glew pcre zlib zstd llvm_9 libxml2 lz4 xz gsl xxHash libAfterImage giflib libjpeg libtiff libpng python.pkgs.numpy nlohmann_json ]
+    ++ lib.optionals (!stdenv.isDarwin) [ libX11 libXpm libXft libXext libGLU libGL expat ]
     ++ lib.optionals (stdenv.isDarwin) [ Cocoa OpenGL ]
     ++ lib.optionals (implicitMT) [ tbb ]
   ;
@@ -66,12 +70,15 @@ stdenv.mkDerivation rec {
   '';
 
   cmakeFlags = [
+    "-DCMAKE_CXX_STANDARD=17"
     "-Drpath=ON"
     "-DCMAKE_INSTALL_LIBDIR=lib"
     "-DCMAKE_INSTALL_INCLUDEDIR=include"
     "-Dalien=OFF"
     "-Dbonjour=OFF"
     "-Dbuiltin_llvm=OFF"
+    "-Dbuiltin_nlohmannjson=OFF"
+    "-Droot7=OFF"
     "-Dcastor=OFF"
     "-Dchirp=OFF"
     "-Dclad=OFF"
@@ -100,7 +107,6 @@ stdenv.mkDerivation rec {
     "-Dvdt=OFF"
     "-Dxml=ON"
     "-Dxrootd=OFF"
-    "-DCMAKE_CXX_STANDARD=17"  # Manually request C++17 standard, but NOT ROOT 7
   ]
   ++ lib.optional (stdenv.cc.libc != null) "-DC_INCLUDE_DIRS=${lib.getDev stdenv.cc.libc}/include"
   ++ lib.optionals stdenv.isDarwin [
