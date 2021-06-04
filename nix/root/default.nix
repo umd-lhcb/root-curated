@@ -7,7 +7,7 @@
 , gl2ps
 , glew
 , gsl
-, llvm_5
+, llvm_9
 , libX11
 , libXpm
 , libXft
@@ -37,15 +37,15 @@
 
 stdenv.mkDerivation rec {
   pname = "root";
-  version = "6.22.08";
+  version = "6.24.00";
 
   src = fetchurl {
     url = "https://root.cern.ch/download/root_v${version}.source.tar.gz";
-    sha256 = "0vrgi83hrw4n9zgx873fn4ba3vk54slrwk1cl4cc4plgxzv1y1kg";
+    sha256 = "12crjzd7pzx5qpk2pb3z0rhmxlw5gsqaqzfl48qiq8c9l940b8wx";
   };
 
-  nativeBuildInputs = [ makeWrapper cmake pkg-config llvm_5.dev ];
-  buildInputs = [ ftgl gl2ps glew pcre zlib zstd llvm_5 libxml2 lz4 xz gsl xxHash libAfterImage giflib libjpeg libtiff libpng python.pkgs.numpy ]
+  nativeBuildInputs = [ makeWrapper cmake pkg-config llvm_9.dev ];
+  buildInputs = [ ftgl gl2ps glew pcre zlib zstd llvm_9 libxml2 lz4 xz gsl xxHash libAfterImage giflib libjpeg libtiff libpng python.pkgs.numpy ]
     ++ lib.optionals (!stdenv.isDarwin) [ libX11 libXpm libXft libXext libGLU libGL ]
     ++ lib.optionals (stdenv.isDarwin) [ Cocoa OpenGL ]
     ++ lib.optionals (implicitMT) [ tbb ]
