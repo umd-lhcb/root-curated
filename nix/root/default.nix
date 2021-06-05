@@ -60,8 +60,6 @@ stdenv.mkDerivation rec {
 
   preConfigure = ''
     rm -rf builtins/*
-    #rm -rf builtins/{davix,glex,lz4,nlohmann,openssl,pcre,tbb,xxhash,zlib,zstd}
-    # Sadly we need to keep OpenUI 5 for ROOT to build
     substituteInPlace cmake/modules/SearchInstalledSoftware.cmake \
       --replace 'set(lcgpackages ' '#set(lcgpackages '
 
@@ -91,7 +89,7 @@ stdenv.mkDerivation rec {
     "-Dgfal=OFF"
     "-Dgviz=OFF"
     "-Dhdfs=OFF"
-    "-Dhttp=OFF"
+    "-Dhttp=ON"
     "-Dkrb5=OFF"
     "-Dldap=OFF"
     "-Dmonalisa=OFF"
