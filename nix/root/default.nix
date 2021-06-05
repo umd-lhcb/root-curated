@@ -9,7 +9,6 @@
 , gl2ps
 , glew
 , gsl
-, llvm_9
 , libX11
 , libXpm
 , libXft
@@ -48,8 +47,8 @@ stdenv.mkDerivation rec {
     sha256 = "12crjzd7pzx5qpk2pb3z0rhmxlw5gsqaqzfl48qiq8c9l940b8wx";
   };
 
-  nativeBuildInputs = [ makeWrapper cmake pkg-config llvm_9.dev git breakpointHook ];
-  buildInputs = [ ftgl gl2ps glew pcre zlib zstd llvm_9 libxml2 lz4 xz gsl xxHash libAfterImage giflib libjpeg libtiff libpng python.pkgs.numpy nlohmann_json ]
+  nativeBuildInputs = [ makeWrapper cmake pkg-config git ];
+  buildInputs = [ ftgl gl2ps glew pcre zlib zstd libxml2 lz4 xz gsl xxHash libAfterImage giflib libjpeg libtiff libpng python.pkgs.numpy nlohmann_json ]
     ++ lib.optionals (!stdenv.isDarwin) [ libX11 libXpm libXft libXext libGLU libGL expat ]
     ++ lib.optionals (stdenv.isDarwin) [ Cocoa OpenGL ]
     ++ lib.optionals (implicitMT) [ tbb ]
@@ -61,6 +60,8 @@ stdenv.mkDerivation rec {
 
   preConfigure = ''
     rm -rf builtins/*
+    #rm -rf builtins/{davix,glex,lz4,nlohmann,openssl,pcre,tbb,xxhash,zlib,zstd}
+    # Sadly we need to keep OpenUI 5 for ROOT to build
     substituteInPlace cmake/modules/SearchInstalledSoftware.cmake \
       --replace 'set(lcgpackages ' '#set(lcgpackages '
 
@@ -74,11 +75,10 @@ stdenv.mkDerivation rec {
     "-Drpath=ON"
     "-DCMAKE_INSTALL_LIBDIR=lib"
     "-DCMAKE_INSTALL_INCLUDEDIR=include"
+    "-Dbuiltin_nlohmannjson=OFF"
+    "-Dbuiltin_openui5=OFF"
     "-Dalien=OFF"
     "-Dbonjour=OFF"
-    "-Dbuiltin_llvm=OFF"
-    "-Dbuiltin_nlohmannjson=OFF"
-    "-Droot7=OFF"
     "-Dcastor=OFF"
     "-Dchirp=OFF"
     "-Dclad=OFF"
@@ -91,6 +91,7 @@ stdenv.mkDerivation rec {
     "-Dgfal=OFF"
     "-Dgviz=OFF"
     "-Dhdfs=OFF"
+    "-Dhttp=OFF"
     "-Dkrb5=OFF"
     "-Dldap=OFF"
     "-Dmonalisa=OFF"
@@ -102,9 +103,11 @@ stdenv.mkDerivation rec {
     "-Dpythia6=OFF"
     "-Dpythia8=OFF"
     "-Drfio=OFF"
+    "-Droot7=OFF"
     "-Dsqlite=OFF"
     "-Dssl=OFF"
     "-Dvdt=OFF"
+    "-Dwebgui=OFF"
     "-Dxml=ON"
     "-Dxrootd=OFF"
   ]
