@@ -63,6 +63,13 @@ stdenv.mkDerivation rec {
     substituteInPlace cmake/modules/SearchInstalledSoftware.cmake \
       --replace 'set(lcgpackages ' '#set(lcgpackages '
 
+    # Don't require textutil on macOS
+    : > cmake/modules/RootCPack.cmake
+
+    # Hardcode path to fix use with cmake
+    sed -i cmake/scripts/ROOTConfig.cmake.in \
+      -e 'iset(nlohmann_json_DIR "${nlohmann_json}/lib/cmake/nlohmann_json/")'
+
     patchShebangs build/unix/
   '' + lib.optionalString noSplash ''
     substituteInPlace rootx/src/rootx.cxx --replace "gNoLogo = false" "gNoLogo = true"
