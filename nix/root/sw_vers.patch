@@ -1,5 +1,4 @@
-diff --git a/cmake/modules/SetUpMacOS.cmake b/cmake/modules/SetUpMacOS.cmake
-index c0118b9aba..c046825a1f 100644
+diff a/cmake/modules/SetUpMacOS.cmake b/cmake/modules/SetUpMacOS.cmake
 --- a/cmake/modules/SetUpMacOS.cmake
 +++ b/cmake/modules/SetUpMacOS.cmake
 @@ -28,17 +28,10 @@ if(CMAKE_VERSION VERSION_LESS 3.14.4)
@@ -51,8 +50,7 @@ index c0118b9aba..c046825a1f 100644
  else (CMAKE_SYSTEM_NAME MATCHES Darwin)
    MESSAGE(FATAL_ERROR "There is no setup for this this Apple system up to now. Don't know waht to do. Stop cmake at this point.")
  endif (CMAKE_SYSTEM_NAME MATCHES Darwin)
-diff --git a/config/root-config.in b/config/root-config.in
-index a10af8cab0..b320d728d6 100755
+diff a/config/root-config.in b/config/root-config.in
 --- a/config/root-config.in
 +++ b/config/root-config.in
 @@ -312,12 +312,6 @@ macosxicc)
