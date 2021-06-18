@@ -32,7 +32,6 @@
 , libpng
 , nlohmann_json
 , tbb
-, AppKit
 , Cocoa
 , OpenGL
 , noSplash ? false
@@ -51,7 +50,7 @@ stdenv.mkDerivation rec {
   nativeBuildInputs = [ makeWrapper cmake pkg-config git ];
   buildInputs = [ ftgl gl2ps glew pcre zlib zstd libxml2 lz4 xz gsl xxHash libAfterImage giflib libjpeg libtiff libpng nlohmann_json python.pkgs.numpy ]
     ++ lib.optionals (!stdenv.isDarwin) [ libX11 libXpm libXft libXext libGLU libGL expat ]
-    ++ lib.optionals (stdenv.isDarwin) [ AppKit Cocoa OpenGL ]
+    ++ lib.optionals (stdenv.isDarwin) [ Cocoa OpenGL ]
     ++ lib.optionals (implicitMT) [ tbb ]
   ;
 
