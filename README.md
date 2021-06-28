@@ -47,7 +47,8 @@ for our analyses at this repo.
 
 
 ## Compiling `root` without `nix` on macOS
-0. Remove existing ROOT installation: rm -rf install_root build_root
+
+0. Remove existing ROOT installation: `rm -rf root_build root_install`
 1. `git clone --branch histfactory_patch https://github.com/umd-lhcb/root.git`
 2. `mkdir root_build root_install && cd root_build`
 3. `cmake -DCMAKE_INSTALL_PREFIX=../root_install/ -Dsqlite=OFF -Dmysql=OFF -Dx11=ON  -Droofit=ON -Dmt=ON -Dminuit2=ON -Dccache=ON -Dlibcxx=ON -Drpath=ON ../root `
