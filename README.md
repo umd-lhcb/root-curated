@@ -53,5 +53,4 @@ for our analyses at this repo.
 3. `cmake -DCMAKE_INSTALL_PREFIX=../root_install/ -Dsqlite=OFF -Dmysql=OFF -Dx11=ON  -Droofit=ON -Dmt=ON -Dminuit2=ON -Dccache=ON -Dlibcxx=ON -Drpath=ON ../root `
 4. `cmake --build . -- install -j8`
 
-    Note: `jN` depends on number of CPU core you have; 'N' should be your
-    number of CPU cores.
+    Note:  For `-jN`, `N` should equal to your number of CPU cores.
