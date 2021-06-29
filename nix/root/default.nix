@@ -33,6 +33,7 @@
 , nlohmann_json
 , tbb
 , Cocoa
+, CoreSymbolication
 , OpenGL
 , noSplash ? false
 , implicitMT ? false
