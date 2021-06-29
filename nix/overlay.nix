@@ -1,7 +1,7 @@
 final: prev:
 
 {
-  darwin = darwin.override {
+  darwin = darwin // {
     apple_sdk_10_12 = prev.callPackage ./apple-sdk {
       inherit (prev.buildPackages.darwin) print-reexports;
       inherit (prev.darwin) darwin-stubs;
