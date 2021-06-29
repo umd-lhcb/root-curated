@@ -74,6 +74,10 @@ stdenv.mkDerivation rec {
     patchShebangs build/unix/
   '' + lib.optionalString noSplash ''
     substituteInPlace rootx/src/rootx.cxx --replace "gNoLogo = false" "gNoLogo = true"
+  '' + lib.optionalString stdenv.isDarwin ''
+    # Eliminate impure reference to /System/Library/PrivateFrameworks
+    substituteInPlace core/CMakeLists.txt \
+      --replace "-F/System/Library/PrivateFrameworks" ""
   '';
 
   cmakeFlags = [
@@ -125,6 +129,7 @@ stdenv.mkDerivation rec {
     # fatal error: module map file '/nix/store/<hash>-Libsystem-osx-10.12.6/include/module.modulemap' not found
     # fatal error: could not build module '_Builtin_intrinsics'
     "-Druntime_cxxmodules=OFF"
+
   ]
   ++ lib.optional (implicitMT) "-Dimt=ON"
   ++ lib.optional (!implicitMT) "-Dimt=OFF"
