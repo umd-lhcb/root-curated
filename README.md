@@ -96,6 +96,19 @@ For this guide, it is assumed that `nix` is already installed.
     you will automatically enter the `nix develop` shell w/o typing anything.
 
 
+## Upgrade `nix`
+
+On macOS, with sudo:
+```shell
+sudo -i sh -c 'nix-channel --update && nix-env -iA nixpkgs.nix && launchctl remove org.nixos.nix-daemon && launchctl load /Library/LaunchDaemons/org.nixos.nix-daemon.plist'
+```
+
+On Linux, with sudo:
+```shell
+sudo nix-channel --update; nix-env -iA nixpkgs.nix nixpkgs.cacert; systemctl daemon-reload; systemctl restart nix-daemon
+```
+
+
 ## Compiling `root` without `nix` on macOS
 
 0. Remove existing ROOT installation: `rm -rf root_build root_install`
