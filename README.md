@@ -46,6 +46,56 @@ for our analyses at this repo.
     ```
 
 
+## Automate `nix develop` by installing `direnv`
+
+It can be tiresome to type `nix develop` for every project. `direnv` provides a
+solution than enters the shell provided by `nix develop` automatically. You
+should install it!
+
+For this guide, it is assumed that `nix` is already installed.
+
+1. Install `direnv` and `nix-direv` with:
+
+    ```shell
+    nix-env -f '<nixpkgs>' -iA nix-direnv direnv
+    ```
+
+2. Update your shell configuration:
+
+    1. For `bash`:
+
+        ```bash
+        eval "$(direnv hook bash)"
+        ```
+
+    2. For `zsh`:
+
+        ```bash
+        eval "$(direnv hook zsh)"
+        ```
+
+3. Configure `direnv` to source `nix-direnv`. In `$HOME/.direnvrc`:
+
+    ```bash
+    source $HOME/.nix-profile/share/nix-direnv/direnvrc
+    ```
+
+4. Add the following settings to `/etc/nix/nix.conf` (need sudo):
+
+    ```
+    keep-outputs = true
+    keep-derivations = true
+    ```
+
+5. Reboot your computer since `nix` config has changed.
+
+6. For any project that has a `.envrc` in its root, the first time you `cd`
+   into that directory, `direnv` will prompt that the `envrc` is blocked.
+
+    Type `direnv allow` to unblock it. Next time you `cd` into that directory,
+    you will automatically enter the `nix develop` shell w/o typing anything.
+
+
 ## Compiling `root` without `nix` on macOS
 
 0. Remove existing ROOT installation: `rm -rf root_build root_install`
