@@ -96,6 +96,20 @@ For this guide, it is assumed that `nix` is already installed.
     you will automatically enter the `nix develop` shell w/o typing anything.
 
 
+## Remove unused packages
+
+Over time you may have a large collection of unused packages/old builds inside
+`/nix`.
+
+To safely remove these, first follow the [`direnv` section](#automate-nix-develop-by-installing-direnv)
+so that `direnv` will automatically create flags that prevent your latest
+packages from garbage collection, then:
+
+```shell
+nix-collect-garbage -d
+```
+
+
 ## Upgrade `nix`
 
 On macOS, with sudo:
