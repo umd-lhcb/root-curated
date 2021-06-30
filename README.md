@@ -123,7 +123,37 @@ sudo nix-channel --update; nix-env -iA nixpkgs.nix nixpkgs.cacert; systemctl dae
 ```
 
 
-## Compiling `root` without `nix` on macOS
+## Miscellaneous
+
+### Package update strategy
+
+- For the base `nixpkgs` that contains complier toolchains, etc. Once it is
+  stable, we don't update during the whole lifetime of an analysis.
+- For ROOT, once we pick a major version, we stick with the major version while
+  trying to update to the latest minor version for the lifetime of an analysis.
+
+    For example, if we are using `6.24.00`, then we should update to `6.24.02`,
+    but we won't update to `6.26.00`
+
+- We should regularly tag working versions of this repository
+- Once a new analysis is started, we should update the base `nixpkgs`.
+- Ideally we should build docker images for old analysis so that we can always
+  go back even if the whole Nix project shuts down.
+
+
+### ROOT branching strategy
+
+We have [a fork of ROOT](https://github.com/umd-lhcb/root) in our organization.
+This is used to adapt Phoebe's HistFactory patches with newer versions of ROOT.
+
+The proposed branching strategy is:
+
+- `histfactory_patch`: Latest development
+- `histfactory_patch-vX-YY`: Historical ROOT versions that work with Phoebe's
+   patch
+
+
+### Compiling ROOT without `nix` on macOS
 
 0. Remove existing ROOT installation: `rm -rf root_build root_install`
 1. `git clone --branch histfactory_patch https://github.com/umd-lhcb/root.git`
