@@ -149,8 +149,8 @@ This is used to adapt Phoebe's HistFactory patches with newer versions of ROOT.
 The proposed branching strategy is:
 
 - `histfactory_patch`: Latest development
-- `histfactory_patch-vX-YY`: Historical ROOT versions that work with Phoebe's
-   patch
+- `histfactory_patch-vX-YY-ZZ`: Historical ROOT versions that work with
+  Phoebe's patch
 
 
 ### Compiling ROOT without `nix` on macOS
