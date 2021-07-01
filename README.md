@@ -114,12 +114,12 @@ nix-collect-garbage -d
 
 On macOS, with sudo:
 ```shell
-sudo -i sh -c 'nix-channel --update && nix-env -iA nixpkgs.nix && launchctl remove org.nixos.nix-daemon && launchctl load /Library/LaunchDaemons/org.nixos.nix-daemon.plist'
+sudo -i sh -c 'nix-channel --update && nix-env -iA nixpkgs.nixUnstable && launchctl remove org.nixos.nix-daemon && launchctl load /Library/LaunchDaemons/org.nixos.nix-daemon.plist'
 ```
 
 On Linux, with sudo:
 ```shell
-sudo nix-channel --update; nix-env -iA nixpkgs.nix nixpkgs.cacert; systemctl daemon-reload; systemctl restart nix-daemon
+sudo nix-channel --update; nix-env -iA nixpkgs.nixUnstable nixpkgs.cacert; systemctl daemon-reload; systemctl restart nix-daemon
 ```
 
 
