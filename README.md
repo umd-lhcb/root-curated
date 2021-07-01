@@ -1,6 +1,6 @@
 # root-curated
-A curated version of ROOT 6 w/ HistFactory patches. We pin the software basis
-for our analyses at this repo.
+A curated software root (foundation) for most of our analysis repos, including
+a version of ROOT 6 w/ HistFactory patches (from Phoebe) applied.
 
 
 ## Install `nix` on macOS
@@ -137,7 +137,7 @@ sudo nix-channel --update; nix-env -iA nixpkgs.nix nixpkgs.cacert; systemctl dae
 
 - We should regularly tag working versions of this repository
 - Once a new analysis is started, we should update the base `nixpkgs`.
-- Ideally we should build docker images for old analysis so that we can always
+- Ideally we should build docker images for old analyses so that we can always
   go back even if the whole Nix project shuts down.
 
 
@@ -146,9 +146,9 @@ sudo nix-channel --update; nix-env -iA nixpkgs.nix nixpkgs.cacert; systemctl dae
 We have [a fork of ROOT](https://github.com/umd-lhcb/root) in our organization.
 This is used to adapt Phoebe's HistFactory patches with newer versions of ROOT.
 
-The proposed branching strategy is:
+The branching strategy is:
 
-- `histfactory_patch`: Latest development
+- `histfactory_patch`: Latest development branch
 - `histfactory_patch_vX-YY-ZZ`: Historical ROOT versions that work with
   Phoebe's patch
 
