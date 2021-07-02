@@ -60,7 +60,7 @@ For this guide, it is assumed that `nix` is already installed.
     nix-env -f '<nixpkgs>' -iA nix-direnv direnv
     ```
 
-2. Update your shell configuration:
+2. Update your shell configuration from `lhcb-ntuples-gen`:
 
     1. For `bash`:
 
