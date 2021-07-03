@@ -39,9 +39,6 @@ stdenv.mkDerivation rec {
   ;
 
   patches = [
-    # UBoost originally from: https://bitbucket.org/jrsteven/uboost.git
-    ./uboost.patch
-
     # various fixes to ROOT build system
     ./sw_vers_root5.patch
 
@@ -51,6 +48,8 @@ stdenv.mkDerivation rec {
     # disable dictionary generation for stuff that includes libc headers
     # our glibc requires a modern compiler
     ./disable_libc_dicts_root5.patch
+
+    ./hist_factory.patch
   ];
 
   preConfigure = ''
