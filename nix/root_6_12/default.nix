@@ -3,22 +3,31 @@
 , fetchurl
 , makeWrapper
 , cmake
-, pcre
-, pkg-config
-, python
+, ftgl
+, gl2ps
+, glew
+, gsl
 , libX11
 , libXpm
 , libXft
 , libXext
 , libGLU
 , libGL
-, zlib
 , libxml2
 , expat
 , lz4
-, lzma
-, gsl
+, xz
+, pcre
+, pkg-config
+, python
 , xxHash
+, zlib
+, zstd
+, libAfterImage
+, giflib
+, libjpeg
+, libtiff
+, libpng
 , Cocoa
 , CoreSymbolication
 , OpenGL
@@ -35,7 +44,7 @@ stdenv.mkDerivation rec {
   };
 
   nativeBuildInputs = [ makeWrapper cmake pkg-config ];
-  buildInputs = [ pcre zlib libxml2 lz4 lzma gsl xxHash python python.pkgs.numpy ]
+  buildInputs = [ ftgl gl2ps glew pcre zlib zstd libxml2 lz4 xz gsl xxHash libAfterImage giflib libjpeg libtiff libpng python.pkgs.numpy ]
     ++ lib.optionals (!stdenv.isDarwin) [ libX11 libXpm libXft libXext libGLU libGL expat ]
     ++ lib.optionals (stdenv.isDarwin) [ Cocoa CoreSymbolication OpenGL ]
   ;
@@ -66,6 +75,7 @@ stdenv.mkDerivation rec {
     "-Dbonjour=OFF"
     "-Dcastor=OFF"
     "-Dchirp=OFF"
+    "-Dclad=OFF"
     "-Ddavix=OFF"
     "-Ddcache=OFF"
     "-Dfail-on-missing=ON"
@@ -90,6 +100,7 @@ stdenv.mkDerivation rec {
     "-Droot7=OFF"
     "-Dsqlite=OFF"
     "-Dssl=OFF"
+    "-Dvdt=OFF"
     "-Dxml=ON"
     "-Dxrootd=OFF"
   ]
