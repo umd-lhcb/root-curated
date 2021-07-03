@@ -1,9 +1,11 @@
 { stdenv
+, lib
 , fetchurl
+, makeWrapper
 , cmake
 , pcre
-, pkgconfig
-, python2
+, pkg-config
+, python
 , libX11
 , libXpm
 , libXft
@@ -12,11 +14,13 @@
 , libGL
 , zlib
 , libxml2
+, expat
 , lz4
 , lzma
 , gsl
 , xxHash
 , Cocoa
+, CoreSymbolication
 , OpenGL
 , noSplash ? false
 }:
@@ -30,10 +34,10 @@ stdenv.mkDerivation rec {
     sha256 = "1557b9sdragsx9i15qh6lq7fn056bgi87d31kxdl4vl0awigvp5f";
   };
 
-  nativeBuildInputs = [ pkgconfig ];
-  buildInputs = [ cmake pcre python2 zlib libxml2 lz4 lzma gsl xxHash ]
-    ++ stdenv.lib.optionals (!stdenv.isDarwin) [ libX11 libXpm libXft libXext libGLU libGL ]
-    ++ stdenv.lib.optionals (stdenv.isDarwin) [ Cocoa OpenGL ]
+  nativeBuildInputs = [ makeWrapper cmake pkg-config ];
+  buildInputs = [ pcre python zlib libxml2 lz4 lzma gsl xxHash ]
+    ++ lib.optionals (!stdenv.isDarwin) [ libX11 libXpm libXft libXext libGLU libGL expat ]
+    ++ lib.optionals (stdenv.isDarwin) [ Cocoa CoreSymbolication OpenGL ]
   ;
 
   patches = [
@@ -41,13 +45,22 @@ stdenv.mkDerivation rec {
   ];
 
   preConfigure = ''
+    rm -rf builtins/*
+    substituteInPlace cmake/modules/SearchInstalledSoftware.cmake \
+      --replace 'set(lcgpackages ' '#set(lcgpackages '
+
     patchShebangs build/unix/
-  '' + stdenv.lib.optionalString noSplash ''
+  '' + lib.optionalString noSplash ''
     substituteInPlace rootx/src/rootx.cxx --replace "gNoLogo = false" "gNoLogo = true"
+  '' + lib.optionalString stdenv.isDarwin ''
+    # Eliminate impure reference to /System/Library/PrivateFrameworks
+    substituteInPlace core/CMakeLists.txt \
+      --replace "-F/System/Library/PrivateFrameworks" ""
   '';
 
   cmakeFlags = [
     "-Drpath=ON"
+    "-DCMAKE_CXX_STANDARD=17"
     "-DCMAKE_INSTALL_LIBDIR=lib"
     "-DCMAKE_INSTALL_INCLUDEDIR=include"
     "-Dalien=OFF"
@@ -56,6 +69,7 @@ stdenv.mkDerivation rec {
     "-Dchirp=OFF"
     "-Ddavix=OFF"
     "-Ddcache=OFF"
+    "-Dfail-on-missing=ON"
     "-Dfftw3=OFF"
     "-Dfitsio=OFF"
     "-Dfortran=OFF"
@@ -74,20 +88,33 @@ stdenv.mkDerivation rec {
     "-Dpythia6=OFF"
     "-Dpythia8=OFF"
     "-Drfio=OFF"
+    "-Droot7=OFF"
     "-Dsqlite=OFF"
     "-Dssl=OFF"
     "-Dxml=ON"
     "-Dxrootd=OFF"
   ]
-  ++ stdenv.lib.optional (stdenv.cc.libc != null) "-DC_INCLUDE_DIRS=${stdenv.lib.getDev stdenv.cc.libc}/include"
-  ++ stdenv.lib.optional stdenv.isDarwin "-DOPENGL_INCLUDE_DIR=${OpenGL}/Library/Frameworks";
+  ++ lib.optional (stdenv.cc.libc != null) "-DC_INCLUDE_DIRS=${lib.getDev stdenv.cc.libc}/include"
+  ++ lib.optionals stdenv.isDarwin [
+    "-DOPENGL_INCLUDE_DIR=${OpenGL}/Library/Frameworks"
+    "-DCMAKE_DISABLE_FIND_PACKAGE_Python2=TRUE"
 
-  enableParallelBuilding = true;
+    # fatal error: module map file '/nix/store/<hash>-Libsystem-osx-10.12.6/include/module.modulemap' not found
+    # fatal error: could not build module '_Builtin_intrinsics'
+    "-Druntime_cxxmodules=OFF"
+  ];
+
+  postInstall = ''
+    for prog in rootbrowse rootcp rooteventselector rootls rootmkdir rootmv rootprint rootrm rootslimtree; do
+      wrapProgram "$out/bin/$prog" \
+        --prefix PYTHONPATH : "$out/lib"
+    done
+  '';
 
   setupHook = ./setup-hook.sh;
 
-  meta = with stdenv.lib; {
-    homepage = https://root.cern.ch/;
+  meta = with lib; {
+    homepage = "https://root.cern.ch/";
     description = "A data analysis framework";
     platforms = platforms.unix;
     maintainers = [ maintainers.veprbl ];
