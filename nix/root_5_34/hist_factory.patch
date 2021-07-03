@@ -1,0 +1,1298 @@
+diff --git a/roofit/histfactory/inc/RooStats/HistFactory/ParamHistFunc.h b/roofit/histfactory/inc/RooStats/HistFactory/ParamHistFunc.h
+index e186121a4d..044be7a1b7 100755
+--- a/roofit/histfactory/inc/RooStats/HistFactory/ParamHistFunc.h
++++ b/roofit/histfactory/inc/RooStats/HistFactory/ParamHistFunc.h
+@@ -42,6 +42,7 @@ public:
+ 
+   void setParamConst( Int_t, Bool_t=kTRUE );
+   void setConstant(bool constant);
++  void setPrefix(const char*);
+ 
+   void setShape(TH1* shape);
+ 
+@@ -90,11 +91,14 @@ protected:
+   //RooRealProxy _dataVar;       // The RooRealVar
+   RooListProxy _dataVars;       // The RooRealVars
+   RooListProxy _paramSet ;            // interpolation parameters
++  
+   //RooAbsBinning* _binning;  // Holds the binning of the dataVar (at construction time)
+ 
+   Int_t _numBins;
+   mutable std::map<Int_t, Int_t> _binMap;
++  mutable std::vector<std::string> _nameCache;
+   mutable RooDataHist _dataSet;
++  std::string _prefix;
+    //Bool_t _normalized;
+ 
+   // std::vector< Double_t > _nominalVals; // The nominal vals when gamma = 1.0 ( = 1.0 by default)
+diff --git a/roofit/histfactory/inc/RooStats/HistFactory/PiecewiseInterpolation.h b/roofit/histfactory/inc/RooStats/HistFactory/PiecewiseInterpolation.h
+index 27bc8cf613..f72c24ff48 100644
+--- a/roofit/histfactory/inc/RooStats/HistFactory/PiecewiseInterpolation.h
++++ b/roofit/histfactory/inc/RooStats/HistFactory/PiecewiseInterpolation.h
+@@ -17,6 +17,7 @@
+ #define ROO_PIECEWISEINTERPOLATION
+ 
+ #include "RooAbsReal.h"
++#include "RooAbsSelfCachedReal.h"
+ #include "RooRealProxy.h"
+ #include "RooListProxy.h"
+ 
+@@ -25,7 +26,7 @@
+ class RooRealVar;
+ class RooArgList ;
+ 
+-class PiecewiseInterpolation : public RooAbsReal {
++class PiecewiseInterpolation : public RooAbsSelfCachedReal {
+ public:
+ 
+   PiecewiseInterpolation() ;
+@@ -47,7 +48,7 @@ public:
+   Bool_t setBinIntegrator(RooArgSet& allVars) ;
+ 
+   Int_t getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& analVars, const RooArgSet* normSet,const char* rangeName=0) const ;
+-  Double_t analyticalIntegralWN(Int_t code, const RooArgSet* normSet, const char* rangeName=0) const ;
++  //Double_t analyticalIntegralWN(Int_t code, const RooArgSet* normSet, const char* rangeName=0) const ;
+ 
+   void setPositiveDefinite(bool flag=true){_positiveDefinite=flag;}
+ 
+@@ -58,6 +59,7 @@ public:
+   virtual std::list<Double_t>* binBoundaries(RooAbsRealLValue& /*obs*/, Double_t /*xlo*/, Double_t /*xhi*/) const ;
+   virtual std::list<Double_t>* plotSamplingHint(RooAbsRealLValue& obs, Double_t xlo, Double_t xhi) const ; 
+   virtual Bool_t isBinnedDistribution(const RooArgSet& obs) const ;
++  virtual Double_t getValV(const RooArgSet* nset) const;
+ 
+ protected:
+ 
+@@ -76,8 +78,12 @@ protected:
+     RooArgList _highIntList ;
+     // will want std::vector<RooRealVar*> for low and high also
+   } ;
++  virtual RooArgSet* actualParameters(const RooArgSet &nset) const ;
++  virtual RooArgSet* actualObservables(const RooArgSet &nset) const ;
++  virtual void fillCacheObject(RooAbsCachedReal::FuncCacheElem& cache) const;
+   mutable RooObjCacheManager _normIntMgr ; // The integration cache manager
+ 
++  RooListProxy _depList;
+   RooRealProxy _nominal;           // The nominal value
+   RooArgList   _ownedList ;       // List of owned components
+   RooListProxy _lowSet ;            // Low-side variation
+diff --git a/roofit/histfactory/inc/RooStats/HistFactory/RooBarlowBeestonLL.h b/roofit/histfactory/inc/RooStats/HistFactory/RooBarlowBeestonLL.h
+index d789241a68..01a5b173cd 100644
+--- a/roofit/histfactory/inc/RooStats/HistFactory/RooBarlowBeestonLL.h
++++ b/roofit/histfactory/inc/RooStats/HistFactory/RooBarlowBeestonLL.h
+@@ -42,12 +42,15 @@ public:
+ 		    tau(NULL), nom_pois_mean(NULL),
+ 		    sumPdf(NULL),  nData(-1) {}
+     bool hasStatUncert;
++    bool onlyStatUncert;
+     RooRealVar* gamma;
+     RooArgSet* observables;
+     RooArgSet* bin_center; // Snapshot
+     RooRealVar* tau;
+     RooAbsReal* nom_pois_mean;
+     RooAbsReal* sumPdf;
++    RooAbsReal* sumPdf0;
++    RooAbsReal* sumPdf1;
+     double nData;
+     double binVolume;
+     void SetBinCenter() const;
+@@ -106,6 +109,8 @@ protected:
+   RooAbsData* _data;
+   mutable std::map< std::string, std::vector< BarlowCache > > _barlowCache;
+   mutable std::set< std::string > _statUncertParams;
++  //mutable std::map< std::string, std::vector< double > > _nu_b_vec;
++  //mutable std::map< std::string, std::vector< double > >_nu_b_stat_vec;
+   // Bool_t _startFromMin ; // Always start minimization for global minimum?
+ 
+   /*
+diff --git a/roofit/histfactory/src/HistFactoryModelUtils.cxx b/roofit/histfactory/src/HistFactoryModelUtils.cxx
+index 38e97ab513..0596dcdf99 100644
+--- a/roofit/histfactory/src/HistFactoryModelUtils.cxx
++++ b/roofit/histfactory/src/HistFactoryModelUtils.cxx
+@@ -30,7 +30,7 @@ namespace HistFactory{
+ 
+   RooAbsPdf* getSumPdfFromChannel( RooAbsPdf* sim_channel ) {
+ 
+-    bool verbose=false;
++    bool verbose=true;
+ 
+     if(verbose) std::cout << "Getting the RooRealSumPdf for the channel: " 
+ 			  << sim_channel->GetName() << std::endl;
+@@ -279,13 +279,28 @@ namespace HistFactory{
+       // double nu = expected * fracAtObsValue;
+       
+       // an easier way to get n
+-      TH1* histForN = dataForChan->createHistogram("HhstForN",*obs);
++      /*TH1* histForN = dataForChan->createHistogram("HhstForN",*obs);
+       for(int i=1; i<=histForN->GetNbinsX(); ++i){
+-	double n = histForN->GetBinContent(i);
+-	if(verbose) std::cout << "n" <<  i << " = " << n  << std::endl;
+-	ChannelBinDataMap[ ChannelName ].push_back( n ); 
++	      double n = histForN->GetBinContent(i);
++	      if(verbose) std::cout << "n" <<  i << " = " << n  << std::endl;
++	      ChannelBinDataMap[ ChannelName ].push_back( n );
++      }*/
++      
++      // multidimensional way to get n
++      std::cout << "DEBUG MESSAGE: USING BRIAN'S PATCH" << std::endl;
++      std::cout << "DEBUG MESSAGE: LOOPING OVER "<< dataForChan->numEntries() << " BINS" << std::endl;
++      for(int i=0; i<dataForChan->numEntries(); i++)
++      {
++        const RooArgSet* tmpargs=dataForChan->get(i);
++        //tmpargs->Print("V"); 
++        double n = dataForChan->weight();
++        if(verbose) std::cout << "n" << i << " = " << n << std::endl;
++        ChannelBinDataMap[ ChannelName ].push_back( n );
++        //std::cout << '\n' << std::endl;
+       }
+-      delete histForN;
++      std::cout << "DEBUG MESSAGE: DONE!" << std::endl;
++      
++      //delete histForN;
+     
+     } // End Loop Over Categories
+     
+diff --git a/roofit/histfactory/src/HistFactorySimultaneous.cxx b/roofit/histfactory/src/HistFactorySimultaneous.cxx
+index c129956617..fcbbc737ed 100644
+--- a/roofit/histfactory/src/HistFactorySimultaneous.cxx
++++ b/roofit/histfactory/src/HistFactorySimultaneous.cxx
+@@ -47,28 +47,43 @@ ClassImp(RooStats::HistFactory::HistFactorySimultaneous)
+ //_____________________________________________________________________________
+ RooStats::HistFactory::HistFactorySimultaneous::HistFactorySimultaneous(const char *name, const char *title, 
+ 						 RooAbsCategoryLValue& inIndexCat) : 
+-  RooSimultaneous(name, title, inIndexCat ) {}
++  RooSimultaneous(name, title, inIndexCat )
++  {
++    this->_clientList.setHashTableSize(12007);
++  }
+ 
+ 
+ //_____________________________________________________________________________
+ RooStats::HistFactory::HistFactorySimultaneous::HistFactorySimultaneous(const char *name, const char *title, 
+ 				 const RooArgList& inPdfList, RooAbsCategoryLValue& inIndexCat) :
+-  RooSimultaneous(name, title, inPdfList, inIndexCat) {}
++  RooSimultaneous(name, title, inPdfList, inIndexCat) 
++  {
++    this->_clientList.setHashTableSize(12007);
++  }
+ 
+ 
+ //_____________________________________________________________________________
+ RooStats::HistFactory::HistFactorySimultaneous::HistFactorySimultaneous(const char *name, const char *title, 
+ 				 map<string,RooAbsPdf*> pdfMap, RooAbsCategoryLValue& inIndexCat) :
+-  RooSimultaneous(name, title, pdfMap, inIndexCat) {}
++  RooSimultaneous(name, title, pdfMap, inIndexCat) 
++  {
++    this->_clientList.setHashTableSize(12007);
++  }
+ 
+ 
+ //_____________________________________________________________________________
+ RooStats::HistFactory::HistFactorySimultaneous::HistFactorySimultaneous(const HistFactorySimultaneous& other, const char* name) : 
+-  RooSimultaneous(other, name) {}
++  RooSimultaneous(other, name) 
++  {
++    this->_clientList.setHashTableSize(12007);
++  }
+ 
+ //_____________________________________________________________________________
+ RooStats::HistFactory::HistFactorySimultaneous::HistFactorySimultaneous(const RooSimultaneous& other, const char* name) : 
+-  RooSimultaneous(other, name) {}
++  RooSimultaneous(other, name)
++  {
++    this->_clientList.setHashTableSize(12007);
++  }
+ 
+ //_____________________________________________________________________________
+ RooStats::HistFactory::HistFactorySimultaneous::~HistFactorySimultaneous() 
+@@ -117,6 +132,7 @@ RooAbsReal* RooStats::HistFactory::HistFactorySimultaneous::createNLL(RooAbsData
+ 
+   // Create a standard nll
+   RooNLLVar* nll = (RooNLLVar*) RooSimultaneous::createNLL( data, cmdList );
++  nll->enableOffsetting(kTRUE);
+ 
+   RooBarlowBeestonLL* bbnll = new RooBarlowBeestonLL("bbnll", "bbnll", *nll); //, *observables);
+   bbnll->setPdf( this );
+diff --git a/roofit/histfactory/src/HistoToWorkspaceFactoryFast.cxx b/roofit/histfactory/src/HistoToWorkspaceFactoryFast.cxx
+index 3ef5abb1b7..081f7c4da7 100644
+--- a/roofit/histfactory/src/HistoToWorkspaceFactoryFast.cxx
++++ b/roofit/histfactory/src/HistoToWorkspaceFactoryFast.cxx
+@@ -363,6 +363,7 @@ namespace HistFactory{
+ 
+     RooDataHist* histDHist = new RooDataHist((prefix+"nominalDHist").c_str(),"",observables,hist);
+     RooHistFunc* histFunc = new RooHistFunc((prefix+"_nominal").c_str(),"",observables,*histDHist,0) ;
++    histFunc->forceNumInt(kTRUE);
+ 
+     proto->import(*histFunc);
+ 
+@@ -503,8 +504,8 @@ namespace HistFactory{
+     interp.setPositiveDefinite();
+     interp.setAllInterpCodes(4); // LM: change to 4 (piece-wise linear to 6th order polynomial interpolation + linear extrapolation )
+     // KC: interpo codes 1 etc. don't have proper analytic integral.
+-    RooArgSet observableSet(observables);
+-    interp.setBinIntegrator(observableSet);
++    //RooArgSet observableSet(observables);
++    //interp.setBinIntegrator(observableSet);
+     interp.forceNumInt();
+ 
+     proto->import(interp); // individual params have already been imported in first loop of this function
+@@ -695,7 +696,7 @@ namespace HistFactory{
+     tot.specialIntegratorConfig(kTRUE)->method1D().setLabel("RooBinIntegrator")  ;
+     tot.specialIntegratorConfig(kTRUE)->method2D().setLabel("RooBinIntegrator")  ;
+     tot.specialIntegratorConfig(kTRUE)->methodND().setLabel("RooBinIntegrator")  ;
+-    tot.forceNumInt();
++    //tot.forceNumInt();
+ 
+     // for mixed generation in RooSimultaneous
+     tot.setAttribute("GenerateBinned"); // for use with RooSimultaneous::generate in mixed mode
+diff --git a/roofit/histfactory/src/ParamHistFunc.cxx b/roofit/histfactory/src/ParamHistFunc.cxx
+index c11f84212a..81ef478f2b 100755
+--- a/roofit/histfactory/src/ParamHistFunc.cxx
++++ b/roofit/histfactory/src/ParamHistFunc.cxx
+@@ -97,7 +97,8 @@ ParamHistFunc::ParamHistFunc(const char* name, const char* title,
+   _dataVars("!dataVars","data Vars",       this),
+   _paramSet("!paramSet","bin parameters",  this),
+   _numBins(0),
+-  _dataSet( (std::string(name)+"_dataSet").c_str(), "", vars)
++  _dataSet( (std::string(name)+"_dataSet").c_str(), "", vars),
++  _prefix("")
+ {
+   
+   // Create a function which returns binewise-values
+@@ -128,6 +129,7 @@ ParamHistFunc::ParamHistFunc(const char* name, const char* title,
+   // Add the parameters (with checking)
+   addVarSet( vars );
+   addParamSet( paramSet );
++     _paramSet.setHashTableSize(12007);
+ 
+   
+ }
+@@ -142,7 +144,8 @@ ParamHistFunc::ParamHistFunc(const char* name, const char* title,
+   _dataVars("!dataVars","data Vars",       this),
+   _paramSet("!paramSet","bin parameters",  this),
+   _numBins(0),
+-  _dataSet( (std::string(name)+"_dataSet").c_str(), "", vars, Hist)
++  _dataSet( (std::string(name)+"_dataSet").c_str(), "", vars, Hist),
++  _prefix("")
+ {
+ 
+   // Create a function which returns binewise-values
+@@ -163,6 +166,7 @@ ParamHistFunc::ParamHistFunc(const char* name, const char* title,
+   // Add the parameters (with checking)
+   addVarSet( vars );
+   addParamSet( paramSet );
++     _paramSet.setHashTableSize(12007);
+  
+ }
+ 
+@@ -203,9 +207,19 @@ ParamHistFunc::ParamHistFunc(const ParamHistFunc& other, const char* name) :
+   _paramSet("!paramSet", this, other._paramSet),
+   _numBins( other._numBins ),
+   _binMap( other._binMap ),
+-  _dataSet( other._dataSet )
++  _nameCache( other._nameCache ),
++  _dataSet( other._dataSet ),
++  _prefix(other._prefix )
+ {
++     _paramSet.setHashTableSize(12007);
+   ;
++  
++  RooFIter varIter = _dataVars.fwdIterator() ;
++  RooAbsReal* comp;
++  while((comp=(RooAbsReal*)varIter.next()))
++  {
++    addServer(*comp);
++  }
+   // Copy constructor
+   // Member _ownedList is intentionally not copy-constructed -- ownership is not transferred
+ }
+@@ -245,16 +259,26 @@ RooRealVar& ParamHistFunc::getParameter( Int_t index ) const {
+   // internally in the '_paramSet' vector
+ 
+   Int_t gammaIndex = -1;
+-  if( _binMap.find( index ) != _binMap.end() ) {
+-    gammaIndex = _binMap[ index ];
+-  }
+-  else {
+-    std::cout << "Error: ParamHistFunc internal bin index map "
+-	      << "not properly configured" << std::endl;
+-    throw -1;
++  if(_nameCache[index]!="")
++  {
++    return *((RooRealVar*)_paramSet.find(_nameCache[index].c_str()));
+   }
++  else
++  {
++    if( _binMap.find( index ) != _binMap.end() ) {
++      gammaIndex = _binMap[ index ];
++    }
++    else {
++       std::cout << "Error: ParamHistFunc internal bin index map "
++  	      << "not properly configured" << std::endl;
++      throw -1;
++    }
+ 
+-  return (RooRealVar&) _paramSet[gammaIndex];
++    RooAbsArg *temp;
++    temp = &(_paramSet[gammaIndex]);
++    _nameCache[index]=temp->GetName();
++    return *((RooRealVar*)temp);
++  }
+ }
+ 
+ 
+@@ -277,6 +301,10 @@ void ParamHistFunc::setConstant( bool constant ) {
+   }
+ }
+ 
++void ParamHistFunc::setPrefix(const char* name) {
++  _prefix=name;
++}
++
+ 
+ //_____________________________________________________________________________
+ void ParamHistFunc::setShape( TH1* shape ) {
+@@ -563,6 +591,7 @@ Int_t ParamHistFunc::addVarSet( const RooArgList& vars ) {
+     }
+ 
+     _dataVars.add( *comp );
++    addServer(*comp);
+     numVars++;
+ 
+   }
+@@ -609,6 +638,7 @@ Int_t ParamHistFunc::addVarSet( const RooArgList& vars ) {
+ 	Int_t TH1HistBin    = i + j*numBinsX + k*numBinsX*numBinsY; 
+ 	  
+ 	_binMap[RooDataSetBin] = TH1HistBin;
++        _nameCache.push_back("");
+ 	
+       }
+     }
+@@ -660,6 +690,7 @@ Int_t ParamHistFunc::addParamSet( const RooArgList& params ) {
+     _paramSet.add( *comp );
+ 
+   }
++  _paramSet.setHashTableSize(12007);
+   
+   return 0;
+ 
+@@ -672,8 +703,29 @@ Double_t ParamHistFunc::evaluate() const
+ 
+   // Find the bin cooresponding to the current
+   // value of the RooRealVar:
++  
+ 
+-  RooRealVar* param = (RooRealVar*) &(getParameter());
++  RooRealVar* param;
++  //this was a candidate speedup to guess the var name. but it turns out to not
++  //be all that much faster
++  /*
++  if((_prefix!="") && (_dataVars.getSize()==3))
++   {
++      int i=((RooRealVar*)_dataVars.at(0))->getBin();
++      int j=((RooRealVar*)_dataVars.at(1))->getBin();
++      int k=((RooRealVar*)_dataVars.at(2))->getBin();
++	    char VarNameStream[64];
++	    sprintf(VarNameStream, "%s_bin_%d_%d_%d",_prefix.c_str(),i,j,k);
++      param = ((RooRealVar*)_paramSet.find(VarNameStream));
++      return param->getVal();
++   }
++   else
++   {
++     std::cerr << "Problem: _prefix was " << _prefix << endl;
++   }
++   */
++   
++  param = (RooRealVar*) &(getParameter());
+   Double_t value = param->getVal();
+   return value;
+   
+@@ -734,7 +786,6 @@ Double_t ParamHistFunc::analyticalIntegralWN(Int_t /*code*/, const RooArgSet* /*
+     // Get the gamma's value
+     Double_t paramVal  = (*param).getVal();
+     
+-    // Get the bin volume
+     _dataSet.get( nominalItr );
+     Double_t binVolumeDS  = _dataSet.binVolume(); //_binning->binWidth( nominalItr );
+     
+diff --git a/roofit/histfactory/src/PiecewiseInterpolation.cxx b/roofit/histfactory/src/PiecewiseInterpolation.cxx
+index ed6d989d8b..918ef0f1af 100644
+--- a/roofit/histfactory/src/PiecewiseInterpolation.cxx
++++ b/roofit/histfactory/src/PiecewiseInterpolation.cxx
+@@ -18,6 +18,7 @@
+ 
+ #include "RooStats/HistFactory/PiecewiseInterpolation.h"
+ #include "RooAbsReal.h"
++#include "RooAbsSelfCachedReal.h"
+ #include "RooAbsPdf.h"
+ #include "RooErrorHandler.h"
+ #include "RooArgSet.h"
+@@ -49,7 +50,8 @@ PiecewiseInterpolation::PiecewiseInterpolation(const char* name, const char* tit
+ 					       const RooArgList& highSet,
+ 					       const RooArgList& paramSet,
+ 					       Bool_t takeOwnership) :
+-  RooAbsReal(name, title),
++  RooAbsSelfCachedReal(name, title, 0),
++  _depList("!depList","list of observables", this),
+   _nominal("!nominal","nominal value", this, (RooAbsReal&)nominal),
+   _lowSet("!lowSet","low-side variation",this),
+   _highSet("!highSet","high-side variation",this),
+@@ -57,6 +59,7 @@ PiecewiseInterpolation::PiecewiseInterpolation(const char* name, const char* tit
+   _positiveDefinite(false)
+ 
+ {
++  _depList.add(*(_nominal.arg().getObservables((((RooHistFunc&)_nominal.arg()).dataHist()))));
+   // Constructor with two set of RooAbsReals. The value of the function will be
+   //
+   //  A = sum_i lowSet(i)*highSet(i) 
+@@ -116,13 +119,15 @@ PiecewiseInterpolation::PiecewiseInterpolation(const char* name, const char* tit
+   // Choose special integrator by default 
+   specialIntegratorConfig(kTRUE)->method1D().setLabel("RooBinIntegrator") ;
+   TRACE_CREATE
++  this->Print("V");
+ }
+ 
+ 
+ 
+ //_____________________________________________________________________________
+ PiecewiseInterpolation::PiecewiseInterpolation(const PiecewiseInterpolation& other, const char* name) :
+-  RooAbsReal(other, name), 
++  RooAbsSelfCachedReal(other, name), 
++  _depList("!depList",this,other._depList),
+   _nominal("!nominal",this,other._nominal),
+   _lowSet("!lowSet",this,other._lowSet),
+   _highSet("!highSet",this,other._highSet),
+@@ -145,7 +150,220 @@ PiecewiseInterpolation::~PiecewiseInterpolation()
+   TRACE_DESTROY
+ }
+ 
++RooArgSet* PiecewiseInterpolation::actualObservables(const RooArgSet &nset) const
++{
++  RooArgSet *myDeps = new RooArgSet;
++  TIterator* diter = _depList.createIterator();
++  diter->Reset();
++  RooAbsArg* dep;
++  while((dep=(RooAbsArg*)diter->Next()))
++  {
++    myDeps->add(*dep);
++  }
++  return myDeps;
++  //return (RooArgSet*) myDeps.selectCommon(nset);
++
++
++}
++
++RooArgSet* PiecewiseInterpolation::actualParameters(const RooArgSet &nset) const
++{
++  RooArgSet *myPars=new RooArgSet;
++  TIterator* piter = _paramSet.createIterator();
++  piter->Reset();
++  RooAbsArg* par;
++  while((par=(RooAbsArg*)piter->Next()))
++  {
++    myPars->add(*par);
++  }
++  myPars->remove(nset,kTRUE,kTRUE);
++  return myPars;
++
++
++}
++
++
++Double_t PiecewiseInterpolation::getValV(const RooArgSet* nset) const 
++{
++  return RooAbsCachedReal::getValV(((RooArgSet*)&_depList));
++
++
++}
++//8*/
++void PiecewiseInterpolation::fillCacheObject(RooAbsCachedReal::FuncCacheElem& cache) const
++{
++  RooDataHist& cacheHist = *(cache.hist()) ;
++  RooDataHist& nomHist=((RooHistFunc&)(_nominal.arg())).dataHist();
++
++
++  // Iterator over all bins of RooDataHist and fill weights
++  for (Int_t k=0 ; k<cacheHist.numEntries() ; k++) {
++    cacheHist.get(k) ;
++
++    nomHist.get(k);
++
++
++    ///////////////////
++    Double_t nominal = nomHist.weight();
++    Double_t sum(nominal) ;
++
++  //  return sum;
++    RooAbsReal* param ;
++    RooHistFunc* high ;
++    RooHistFunc* low ;
++    int i=0;
++
++    RooFIter lowIter(_lowSet.fwdIterator()) ;
++    RooFIter highIter(_highSet.fwdIterator()) ;
++    RooFIter paramIter(_paramSet.fwdIterator()) ;
++
++    while((param=(RooAbsReal*)paramIter.next())) {
++      low = (RooHistFunc*)(lowIter.next()) ;
++      high = (RooHistFunc*)(highIter.next()) ;
++      low->dataHist().get(k);
++      high->dataHist().get(k);
++      Double_t highVal=high->dataHist().weight();
++      Double_t lowVal=low->dataHist().weight();
++      if ((lowVal==nominal))
++      {
++        if(highVal==nominal) continue;
++      }
++
++      Int_t icode = _interpCode[i] ;
++
++      switch(icode) {
++      case 0: {
++        // piece-wise linear
++        if(param->getVal()>0)
++    sum +=  param->getVal()*(highVal - nominal );
++        else
++    sum += param->getVal()*(nominal - lowVal);
++        break ;
++      }
++      case 1: {
++        // pice-wise log
++        if(param->getVal()>=0)
++    sum *= pow(highVal/nominal, +param->getVal());
++        else
++    sum *= pow(lowVal/nominal,  -param->getVal());
++        break ;
++      }
++      case 2: {
++        // parabolic with linear
++        double a = 0.5*(highVal+lowVal)-nominal;
++        double b = 0.5*(highVal-lowVal);
++        double c = 0;
++        if(param->getVal()>1 ){
++    sum += (2*a+b)*(param->getVal()-1)+highVal-nominal;
++        } else if(param->getVal()<-1 ) {
++    sum += -1*(2*a-b)*(param->getVal()+1)+lowVal-nominal;
++        } else {
++    sum +=  a*pow(param->getVal(),2) + b*param->getVal()+c;
++        }
++        break ;
++      }
++      case 3: {
++        //parabolic version of log-normal
++        double a = 0.5*(highVal+lowVal)-nominal;
++        double b = 0.5*(highVal-lowVal);
++        double c = 0;
++        if(param->getVal()>1 ){
++    sum += (2*a+b)*(param->getVal()-1)+highVal-nominal;
++        } else if(param->getVal()<-1 ) {
++    sum += -1*(2*a-b)*(param->getVal()+1)+lowVal-nominal;
++        } else {
++    sum +=  a*pow(param->getVal(),2) + b*param->getVal()+c;
++        }
++        break ;
++      }
++      case 4: {
++        
++        // WVE ****************************************************************
++        // WVE *** THIS CODE IS CRITICAL TO HISTFACTORY FIT CPU PERFORMANCE ***
++        // WVE *** Do not modify unless you know what you are doing...      ***
++        // WVE ****************************************************************
++
++        double x  = param->getVal();      
++        if (x>1) {
++    sum += x*(highVal - nominal );
++        } else if (x<-1) {
++    sum += x*(nominal - lowVal);
++        } else {
++    double eps_plus = highVal - nominal;
++    double eps_minus = nominal - lowVal;
++    double S = 0.5 * (eps_plus + eps_minus);
++    double A = 0.0625 * (eps_plus - eps_minus);
++    
++    //fcns+der+2nd_der are eq at bd
++
++          double val = nominal + x * (S + x * A * ( 15 + x * x * (-10 + x * x * 3  ) ) ); 
++
++
++    if (val < 0) val = 0;
++    sum += val-nominal;
++        }
++        break ;
++
++        // WVE ****************************************************************
++      }
++      case 5: {
++        
++        double x0 = 1.0;//boundary;
++        double x  = param->getVal();
++
++        if (x > x0 || x < -x0)
++        {
++    if(x>0)
++      sum += x*(highVal - nominal );
++    else
++      sum += x*(nominal - lowVal);
++        }
++        else if (nominal != 0)
++        {
++    double eps_plus = highVal - nominal;
++    double eps_minus = nominal - lowVal;
++    double S = (eps_plus + eps_minus)/2;
++    double A = (eps_plus - eps_minus)/2;
++
++    //fcns+der are eq at bd
++    double a = S;
++    double b = 3*A/(2*x0);
++    //double c = 0;
++    double d = -A/(2*x0*x0*x0);
++
++    double val = nominal + a*x + b*pow(x, 2) + 0/*c*pow(x, 3)*/ + d*pow(x, 4);
++    if (val < 0) val = 0;
++
++    //cout << "Using interp code 5, val = " << val << endl;
++
++    sum += val-nominal;
++        }
++        break ;
++      }
++      default: {
++        coutE(InputArguments) << "PiecewiseInterpolation::evaluate ERROR:  " << param->GetName() 
++            << " with unknown interpolation code" << icode << endl ;
++        break ;
++      }
++      }
++      ++i;
++    }
++    
++    if(_positiveDefinite && (sum<0)){
++      sum = 1e-6;
++      sum = 0;
++      //     cout <<"sum < 0 forcing  positive definite"<<endl;
++       //     int code = 1;
++       //     RooArgSet* myset = new RooArgSet();
++       //     cout << "integral = " << analyticalIntegralWN(code, myset) << endl;
++    } else if(sum<0){
++       cxcoutD(Tracing) <<"PiecewiseInterpolation::evaluate -  sum < 0, not forcing positive definite"<<endl;
++    }
++    cacheHist.set(sum);
+ 
++  }
++
++}
+ 
+ 
+ //_____________________________________________________________________________
+@@ -157,6 +375,7 @@ Double_t PiecewiseInterpolation::evaluate() const
+   Double_t nominal = _nominal;
+   Double_t sum(nominal) ;
+ 
++//  return sum;
+   RooAbsReal* param ;
+   RooAbsReal* high ;
+   RooAbsReal* low ;
+@@ -169,6 +388,12 @@ Double_t PiecewiseInterpolation::evaluate() const
+   while((param=(RooAbsReal*)paramIter.next())) {
+     low = (RooAbsReal*)lowIter.next() ;
+     high = (RooAbsReal*)highIter.next() ;
++    Double_t highVal=high->getVal();
++    Double_t lowVal=low->getVal();
++    if ((lowVal==nominal))
++    {
++      if(highVal==nominal) continue;
++    }
+ 
+     Int_t icode = _interpCode[i] ;
+ 
+@@ -176,28 +401,28 @@ Double_t PiecewiseInterpolation::evaluate() const
+     case 0: {
+       // piece-wise linear
+       if(param->getVal()>0)
+-	sum +=  param->getVal()*(high->getVal() - nominal );
++	sum +=  param->getVal()*(highVal - nominal );
+       else
+-	sum += param->getVal()*(nominal - low->getVal());
++	sum += param->getVal()*(nominal - lowVal);
+       break ;
+     }
+     case 1: {
+       // pice-wise log
+       if(param->getVal()>=0)
+-	sum *= pow(high->getVal()/nominal, +param->getVal());
++	sum *= pow(highVal/nominal, +param->getVal());
+       else
+-	sum *= pow(low->getVal()/nominal,  -param->getVal());
++	sum *= pow(lowVal/nominal,  -param->getVal());
+       break ;
+     }
+     case 2: {
+       // parabolic with linear
+-      double a = 0.5*(high->getVal()+low->getVal())-nominal;
+-      double b = 0.5*(high->getVal()-low->getVal());
++      double a = 0.5*(highVal+lowVal)-nominal;
++      double b = 0.5*(highVal-lowVal);
+       double c = 0;
+       if(param->getVal()>1 ){
+-	sum += (2*a+b)*(param->getVal()-1)+high->getVal()-nominal;
++	sum += (2*a+b)*(param->getVal()-1)+highVal-nominal;
+       } else if(param->getVal()<-1 ) {
+-	sum += -1*(2*a-b)*(param->getVal()+1)+low->getVal()-nominal;
++	sum += -1*(2*a-b)*(param->getVal()+1)+lowVal-nominal;
+       } else {
+ 	sum +=  a*pow(param->getVal(),2) + b*param->getVal()+c;
+       }
+@@ -205,13 +430,13 @@ Double_t PiecewiseInterpolation::evaluate() const
+     }
+     case 3: {
+       //parabolic version of log-normal
+-      double a = 0.5*(high->getVal()+low->getVal())-nominal;
+-      double b = 0.5*(high->getVal()-low->getVal());
++      double a = 0.5*(highVal+lowVal)-nominal;
++      double b = 0.5*(highVal-lowVal);
+       double c = 0;
+       if(param->getVal()>1 ){
+-	sum += (2*a+b)*(param->getVal()-1)+high->getVal()-nominal;
++	sum += (2*a+b)*(param->getVal()-1)+highVal-nominal;
+       } else if(param->getVal()<-1 ) {
+-	sum += -1*(2*a-b)*(param->getVal()+1)+low->getVal()-nominal;
++	sum += -1*(2*a-b)*(param->getVal()+1)+lowVal-nominal;
+       } else {
+ 	sum +=  a*pow(param->getVal(),2) + b*param->getVal()+c;
+       }
+@@ -226,12 +451,12 @@ Double_t PiecewiseInterpolation::evaluate() const
+ 
+       double x  = param->getVal();      
+       if (x>1) {
+-	sum += x*(high->getVal() - nominal );
++	sum += x*(highVal - nominal );
+       } else if (x<-1) {
+-	sum += x*(nominal - low->getVal());
++	sum += x*(nominal - lowVal);
+       } else {
+-	double eps_plus = high->getVal() - nominal;
+-	double eps_minus = nominal - low->getVal();
++	double eps_plus = highVal - nominal;
++	double eps_minus = nominal - lowVal;
+ 	double S = 0.5 * (eps_plus + eps_minus);
+ 	double A = 0.0625 * (eps_plus - eps_minus);
+ 	
+@@ -255,14 +480,14 @@ Double_t PiecewiseInterpolation::evaluate() const
+       if (x > x0 || x < -x0)
+       {
+ 	if(x>0)
+-	  sum += x*(high->getVal() - nominal );
++	  sum += x*(highVal - nominal );
+ 	else
+-	  sum += x*(nominal - low->getVal());
++	  sum += x*(nominal - lowVal);
+       }
+       else if (nominal != 0)
+       {
+-	double eps_plus = high->getVal() - nominal;
+-	double eps_minus = nominal - low->getVal();
++	double eps_plus = highVal - nominal;
++	double eps_minus = nominal - lowVal;
+ 	double S = (eps_plus + eps_minus)/2;
+ 	double A = (eps_plus - eps_minus)/2;
+ 
+@@ -323,20 +548,10 @@ Bool_t PiecewiseInterpolation::setBinIntegrator(RooArgSet& allVars)
+ 
+ //_____________________________________________________________________________
+ Int_t PiecewiseInterpolation::getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& analVars, 
+-						      const RooArgSet* normSet, const char* /*rangeName*/) const 
++						      const RooArgSet* normSet, const char* ) const 
+ {
+   // Advertise that all integrals can be handled internally.
+ 
+-  /*
+-  cout << "---------------------------\nin PiecewiseInterpolation get analytic integral " <<endl;
+-  cout << "all vars = "<<endl;
+-  allVars.Print("v");
+-  cout << "anal vars = "<<endl;
+-  analVars.Print("v");
+-  cout << "normset vars = "<<endl;
+-  if(normSet2)
+-    normSet2->Print("v");
+-  */
+ 
+ 
+   // Handle trivial no-integration scenario
+@@ -347,8 +562,9 @@ Int_t PiecewiseInterpolation::getAnalyticalIntegralWN(RooArgSet& allVars, RooArg
+   // Force using numeric integration
+   // use special numeric integrator  
+   return 0;
++}
+   
+-
++/*
+   // KC: check if interCode=0 for all 
+   RooFIter paramIterExtra(_paramSet.fwdIterator()) ;
+   int i=0;
+@@ -415,79 +631,14 @@ Int_t PiecewiseInterpolation::getAnalyticalIntegralWN(RooArgSet& allVars, RooArg
+ 
+ 
+ //_____________________________________________________________________________
+-Double_t PiecewiseInterpolation::analyticalIntegralWN(Int_t code, const RooArgSet* /*normSet2*/,const char* /*rangeName*/) const 
++Double_t PiecewiseInterpolation::analyticalIntegralWN(Int_t code, const RooArgSet* ,const char* ) const 
+ {
+   // Implement analytical integrations by doing appropriate weighting from  component integrals
+   // functions to integrators of components
+ 
+-  /*
+-  cout <<"Enter analytic Integral"<<endl;
+-  printDirty(true);
+-  //  _nominal.arg().setDirtyInhibit(kTRUE) ;
+-  _nominal.arg().setShapeDirty() ;
+-  RooAbsReal* temp ;
+-  RooFIter lowIter(_lowSet.fwdIterator()) ;
+-  while((temp=(RooAbsReal*)lowIter.next())) {
+-    //    temp->setDirtyInhibit(kTRUE) ;
+-    temp->setShapeDirty() ;
+-  }
+-  RooFIter highIter(_highSet.fwdIterator()) ;
+-  while((temp=(RooAbsReal*)highIter.next())) {
+-    //    temp->setDirtyInhibit(kTRUE) ;
+-    temp->setShapeDirty() ;
+-  }
+-  */
+ 
+-  /*
+-  RooAbsArg::setDirtyInhibit(kTRUE);
+-  printDirty(true);
+-  cout <<"done setting dirty inhibit = true"<<endl;
+ 
+-  // old integral, only works for linear and not positive definite
+-  CacheElem* cache = (CacheElem*) _normIntMgr.getObjByIndex(code-1) ;
+-
+-  
+- std::auto_ptr<RooArgSet> vars2( getParameters(RooArgSet()) );
+- std::auto_ptr<RooArgSet> iset(  _normIntMgr.nameSet2ByIndex(code-1)->select(*vars2) );            
+- cout <<"iset = "<<endl;
+- iset->Print("v");
+-
+-  double sum = 0;
+-  RooArgSet* vars = getVariables();
+-  vars->remove(_paramSet);
+-  _paramSet.Print("v");
+-  vars->Print("v");
+-  if(vars->getSize()==1){
+-    RooRealVar* obs = (RooRealVar*) vars->first();
+-    for(int i=0; i<obs->numBins(); ++i){
+-      obs->setVal( obs->getMin() + (.5+i)*(obs->getMax()-obs->getMin())/obs->numBins());
+-      sum+=evaluate()*(obs->getMax()-obs->getMin())/obs->numBins();
+-      cout << "obs = " << obs->getVal() << " sum = " << sum << endl;
+-    }
+-  } else{
+-    cout <<"only know how to deal with 1 observable right now"<<endl;
+-  }
+-  */
+-
+-  /*
+-  _nominal.arg().setDirtyInhibit(kFALSE) ;
+-  RooFIter lowIter2(_lowSet.fwdIterator()) ;
+-  while((temp=(RooAbsReal*)lowIter2.next())) {
+-    temp->setDirtyInhibit(kFALSE) ;
+-  }
+-  RooFIter highIter2(_highSet.fwdIterator()) ;
+-  while((temp=(RooAbsReal*)highIter2.next())) {
+-    temp->setDirtyInhibit(kFALSE) ;
+-  }
+-  */
+   
+-  /*
+-  RooAbsArg::setDirtyInhibit(kFALSE);
+-  printDirty(true);
+-  cout <<"done"<<endl;
+-  cout << "sum = " <<sum<<endl;
+-  //return sum;
+-  */  
+ 
+   // old integral, only works for linear and not positive definite
+   CacheElem* cache = (CacheElem*) _normIntMgr.getObjByIndex(code-1) ;
+@@ -530,74 +681,12 @@ Double_t PiecewiseInterpolation::analyticalIntegralWN(Int_t code, const RooArgSe
+     ++i;
+   }
+ 
+-  /* // MB : old bit of interpolation code
+-  while( (param=(RooAbsReal*)_paramIter->Next()) ) {
+-    low = (RooAbsReal*)lowIntIter->Next() ;
+-    high = (RooAbsReal*)highIntIter->Next() ;
+-    
+-    if(param->getVal()>0) {
+-      value += param->getVal()*(high->getVal() - nominal );
+-    } else {
+-      value += param->getVal()*(nominal - low->getVal());
+-    }
+-    ++i;
+-  }
+-  */
+ 
+-  /* KC: the code below is wrong.  Can't pull out a constant change to a non-linear shape deformation.
+-  while( (param=(RooAbsReal*)paramIter.next()) ) {
+-    low = (RooAbsReal*)lowIntIter.next() ;
+-    high = (RooAbsReal*)highIntIter.next() ;
+-
+-    if(_interpCode.empty() || _interpCode.at(i)==0){
+-      // piece-wise linear
+-      if(param->getVal()>0)
+-	value +=  param->getVal()*(high->getVal() - nominal );
+-      else
+-	value += param->getVal()*(nominal - low->getVal());
+-    } else if(_interpCode.at(i)==1){
+-      // pice-wise log
+-      if(param->getVal()>=0)
+-	value *= pow(high->getVal()/nominal, +param->getVal());
+-      else
+-	value *= pow(low->getVal()/nominal,  -param->getVal());
+-    } else if(_interpCode.at(i)==2){
+-      // parabolic with linear
+-      double a = 0.5*(high->getVal()+low->getVal())-nominal;
+-      double b = 0.5*(high->getVal()-low->getVal());
+-      double c = 0;
+-      if(param->getVal()>1 ){
+-	value += (2*a+b)*(param->getVal()-1)+high->getVal()-nominal;
+-      } else if(param->getVal()<-1 ) {
+-	value += -1*(2*a-b)*(param->getVal()+1)+low->getVal()-nominal;
+-      } else {
+-	value +=  a*pow(param->getVal(),2) + b*param->getVal()+c;
+-      }
+-    } else if(_interpCode.at(i)==3){
+-      //parabolic version of log-normal
+-      double a = 0.5*(high->getVal()+low->getVal())-nominal;
+-      double b = 0.5*(high->getVal()-low->getVal());
+-      double c = 0;
+-      if(param->getVal()>1 ){
+-	value += (2*a+b)*(param->getVal()-1)+high->getVal()-nominal;
+-      } else if(param->getVal()<-1 ) {
+-	value += -1*(2*a-b)*(param->getVal()+1)+low->getVal()-nominal;
+-      } else {
+-	value +=  a*pow(param->getVal(),2) + b*param->getVal()+c;
+-      }
+-	
+-    } else {
+-      coutE(InputArguments) << "PiecewiseInterpolation::analyticalIntegralWN ERROR:  " << param->GetName() 
+-			    << " with unknown interpolation code" << endl ;
+-    }
+-    ++i;
+-  }
+-  */
+ 
+   //  cout << "value = " << value <<endl;
+   return value;
+ }
+-
++*/
+ 
+ //_____________________________________________________________________________
+ void PiecewiseInterpolation::setInterpCode(RooAbsReal& param, int code){
+diff --git a/roofit/histfactory/src/RooBarlowBeestonLL.cxx b/roofit/histfactory/src/RooBarlowBeestonLL.cxx
+index 637bc68413..b8b2ef9d52 100644
+--- a/roofit/histfactory/src/RooBarlowBeestonLL.cxx
++++ b/roofit/histfactory/src/RooBarlowBeestonLL.cxx
+@@ -34,6 +34,9 @@
+ #include "RooRealVar.h"
+ #include "RooMsgService.h"
+ #include "RooNLLVar.h"
++#include "RooCustomizer.h"
++#include "RooConstVar.h"
++#include "TString.h"
+ 
+ #include "RooStats/RooStatsUtils.h"
+ #include "RooProdPdf.h"
+@@ -41,6 +44,7 @@
+ #include "RooSimultaneous.h"
+ #include "RooArgList.h"
+ #include "RooAbsCategoryLValue.h"
++#include "RooRealSumPdf.h"
+ 
+ #include "RooStats/HistFactory/ParamHistFunc.h"
+ #include "RooStats/HistFactory/HistFactoryModelUtils.h"
+@@ -58,6 +62,7 @@ ClassImp(RooStats::HistFactory::RooBarlowBeestonLL)
+ //  _par("nuisanceParam","Nuisance parameters",this,kFALSE,kFALSE),
+   _pdf(NULL), _data(NULL)
+ { 
++    this->_clientList.setHashTableSize(12007);
+   // Default constructor 
+   // Should only be used by proof. 
+   //  _piter = _par.createIterator() ; 
+@@ -74,6 +79,7 @@ RooStats::HistFactory::RooBarlowBeestonLL::RooBarlowBeestonLL(const char *name,
+   //  _par("nuisanceParam","Nuisance parameters",this,kFALSE,kFALSE),
+   _pdf(NULL), _data(NULL)
+ { 
++    this->_clientList.setHashTableSize(12007);
+   // Constructor of profile likelihood given input likelihood nll w.r.t
+   // the given set of variables. The input log likelihood is minimized w.r.t
+   // to all other variables of the likelihood at each evaluation and the
+@@ -106,6 +112,7 @@ RooStats::HistFactory::RooBarlowBeestonLL::RooBarlowBeestonLL(const RooBarlowBee
+   _pdf(NULL), _data(NULL),
+   _paramFixed(other._paramFixed)
+ { 
++    this->_clientList.setHashTableSize(12007);
+   // Copy constructor
+ 
+   //  _piter = _par.createIterator() ;
+@@ -225,8 +232,10 @@ void RooStats::HistFactory::RooBarlowBeestonLL::initializeBarlowCache() {
+     }
+     else {
+       if(verbose) std::cout << "Found ParamHistFunc: " << param_func->GetName() << std::endl;
++
+     }
+ 
++
+     // Now, loop over the bins in this channel
+     // To Do: Check that the index convention
+     // still works for 2-d (ie matches the
+@@ -239,6 +248,38 @@ void RooStats::HistFactory::RooBarlowBeestonLL::initializeBarlowCache() {
+     std::vector<BarlowCache> temp_cache( num_bins );
+     bool channel_has_stat_uncertainty=false;
+ 
++
++      RooRealSumPdf* base_sum_pdf = (RooRealSumPdf*)getSumPdfFromChannel( channelPdf );
++
++      
++      if( base_sum_pdf == NULL )  {
++	std::cout << "Failed to find RooRealSumPdf in channel " <<  channel_name
++		  << ", therefor skipping this channel for analytic uncertainty minimization"
++		  << std::endl;
++	channel_has_stat_uncertainty=false;
++	break;
++      }
++      
++      
++      RooConstVar *zero = new RooConstVar("zero","zero",0.0);
++      RooConstVar *one = new RooConstVar("one","one",1.0);
++      RooCustomizer cust0(*((RooAbsArg*)base_sum_pdf),(channel_name+"cust0").c_str());
++      cust0.replaceArg(*param_func,*zero);
++      RooAbsPdf* sum_pdf_0 = (RooAbsPdf*)cust0.build(kTRUE);
++      RooCustomizer cust1(*((RooAbsArg*)base_sum_pdf),(channel_name+"cust1").c_str());
++      cust1.replaceArg(*param_func,*one);
++      RooAbsPdf* sum_pdf_1 = (RooAbsPdf*)cust1.build(kTRUE);
++      this->addOwnedComponents(RooArgSet(*sum_pdf_1, *sum_pdf_0));
++      
++      RooFIter sumIter(base_sum_pdf->funcList().fwdIterator());
++      RooAbsArg *comp;
++      int noStat=0;
++      while((comp=sumIter.next()))
++      {
++        if(!(TString(comp->GetName()).Contains("StatUncert"))) noStat++;
++      }
++      //base_sum_pdf->forceNumInt();
++
+     for( Int_t bin_index = 0; bin_index < num_bins; ++bin_index ) {
+ 
+       // Create a cache object
+@@ -251,10 +292,12 @@ void RooStats::HistFactory::RooBarlowBeestonLL::initializeBarlowCache() {
+ 	continue;
+       }
+       else {
+-	cache.hasStatUncert=true;
+-	channel_has_stat_uncertainty=true;
+-	cache.gamma = gamma_stat;
+-	_statUncertParams.insert( gamma_stat->GetName() );
++        cache.hasStatUncert=true;
++        cache.onlyStatUncert=false;
++        if(noStat==0) cache.onlyStatUncert=true;
++        channel_has_stat_uncertainty=true;
++        cache.gamma = gamma_stat;
++        _statUncertParams.insert( gamma_stat->GetName() );
+       }
+ 
+       // Store a snapshot of the bin center
+@@ -285,15 +328,10 @@ void RooStats::HistFactory::RooBarlowBeestonLL::initializeBarlowCache() {
+       cache.nom_pois_mean = pois_mean;
+ 
+       // Get the RooRealSumPdf
+-      RooAbsPdf* sum_pdf = getSumPdfFromChannel( channelPdf );
+-      if( sum_pdf == NULL )  {
+-	std::cout << "Failed to find RooRealSumPdf in channel " <<  channel_name
+-		  << ", therefor skipping this channel for analytic uncertainty minimization"
+-		  << std::endl;
+-	channel_has_stat_uncertainty=false;
+-	break;
+-      }
+-      cache.sumPdf = sum_pdf;
++      //RooAbsPdf* sum_pdf = getSumPdfFromChannel( channelPdf );
++      cache.sumPdf = base_sum_pdf;
++      cache.sumPdf0 = sum_pdf_0;
++      cache.sumPdf1 = sum_pdf_1;
+ 
+       // And set the data value for this bin
+       if( ChannelBinDataMap.find(channel_name) == ChannelBinDataMap.end() ) {
+@@ -313,6 +351,21 @@ void RooStats::HistFactory::RooBarlowBeestonLL::initializeBarlowCache() {
+       std::cout << "Adding channel: " << channel_name
+ 		<< " to the barlow cache" << std::endl;
+       _barlowCache[channel_name] = temp_cache;
++      /*std::vector<double> dummy0(temp_cache.size());
++      _nu_b_vec[channel_name]=dummy0;
++      std::vector<double> dummy1(temp_cache.size());
++      _nu_b_stat_vec[channel_name]=dummy1;*/
++      /*if (noStat==0)
++      {
++        cout << "All terms multiplied by MC stats. Setting nu_b to zero" << endl;
++        for(int i=0; i < _nu_b_vec.size(); i++)
++        {
++          _nu_b_vec[channel_name][i]=0.0;
++        }
++
++      }*/
++
++
+     }
+     
+ 
+@@ -470,12 +523,13 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
+ 
+   // Loop over the channels (keys to the map)
+   //clock_t time_before_setVal, time_after_setVal;
+-  //time_before_setVal=clock();  
+   std::map< std::string, std::vector< BarlowCache > >::iterator iter_cache;
+   for( iter_cache = _barlowCache.begin(); iter_cache != _barlowCache.end(); ++iter_cache ) {
+     
+     std::string channel_name = (*iter_cache).first;
+     std::vector< BarlowCache >& channel_cache = (*iter_cache).second;
++    //std::vector< double >& nu_b_vec = _nu_b_vec[channel_name];
++    //std::vector< double >& nu_b_stat_vec = _nu_b_stat_vec[channel_name];
+ 
+     /* Slower way to find the channel vector:
+     // Get the vector of bin uncertainty caches for this channel
+@@ -490,69 +544,82 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
+ 
+     // Loop over the bins in the cache
+     // Set all gamma's to 0
+-    for( unsigned int i = 0; i < channel_cache.size(); ++i ) {
+-      BarlowCache& bin_cache = channel_cache.at(i);
++    //std::vector<BarlowCache>::iterator BCacheIter;
++    //std::vector<BarlowCache>::iterator BCacheEnd = channel_cache.end();
++    //std::vector<double> test(channel_cache.size());
++    //time_before_setVal=clock();  
++    /*for( BCacheIter=channel_cache.begin(); BCacheIter != BCacheEnd; ++BCacheIter ) {
++      BarlowCache& bin_cache = *BCacheIter;
+       if( !bin_cache.hasStatUncert ) continue;
++      if( bin_cache.onlyStatUncert ) continue;
+       RooRealVar* gamma = bin_cache.gamma;
+       gamma->setVal(0.0);
+     }
+-    std::vector< double > nu_b_vec( channel_cache.size() );
++    */
++    //for( unsigned int i = 0; i < channel_cache.size(); ++i ) {
++    //for( BCacheIter=channel_cache.begin(); BCacheIter != BCacheEnd; ++BCacheIter ) {
+     for( unsigned int i = 0; i < channel_cache.size(); ++i ) {
+-      BarlowCache& bin_cache = channel_cache.at(i);
++      BarlowCache& bin_cache = channel_cache[i];
+       if( !bin_cache.hasStatUncert ) continue;
+ 
+-      RooAbsPdf* sum_pdf = (RooAbsPdf*) bin_cache.sumPdf;
++      RooAbsPdf* sum_pdf = (RooAbsPdf*) bin_cache.sumPdf0;
+       RooArgSet* obsSet = bin_cache.observables;
+       double binVolume = bin_cache.binVolume;
+ 
++      double nu_b=0.;
+       bin_cache.SetBinCenter();
+-      double nu_b = sum_pdf->getVal(*obsSet)*sum_pdf->expectedEvents(*obsSet)*binVolume;
+-      nu_b_vec.at(i) = nu_b;
+-    }
++      if( !bin_cache.onlyStatUncert ){
++        nu_b = sum_pdf->getVal(*obsSet)*sum_pdf->expectedEvents(*obsSet)*binVolume;
++        //nu_b_vec[i] = nu_b;
++        if(nu_b == 0.0) bin_cache.onlyStatUncert=true;
++      }
++        
++    //}
+ 
+     // Loop over the bins in the cache
+     // Set all gamma's to 1
+-    for( unsigned int i = 0; i < channel_cache.size(); ++i ) {
+-      BarlowCache& bin_cache = channel_cache.at(i);
++    //for( unsigned int i = 0; i < channel_cache.size(); ++i ) {
++    /*for( BCacheIter=channel_cache.begin(); BCacheIter != BCacheEnd; ++BCacheIter ) {
++      BarlowCache& bin_cache = *BCacheIter;
++      //BarlowCache& bin_cache = channel_cache.at(i);
+       if( !bin_cache.hasStatUncert ) continue;
+       RooRealVar* gamma = bin_cache.gamma;
+       gamma->setVal(1.0);
+-    }
+-    std::vector< double > nu_b_stat_vec( channel_cache.size() );
+-    for( unsigned int i = 0; i < channel_cache.size(); ++i ) {
+-      BarlowCache& bin_cache = channel_cache.at(i);
+-      if( !bin_cache.hasStatUncert ) continue;
++    }*/
++      // for( unsigned int i = 0; i < channel_cache.size(); ++i ) {
++      //BarlowCache& bin_cache = channel_cache[i];
++      //if( !bin_cache.hasStatUncert ) continue;
+ 
+-      RooAbsPdf* sum_pdf = (RooAbsPdf*) bin_cache.sumPdf;
+-      RooArgSet* obsSet = bin_cache.observables;
+-      double binVolume = bin_cache.binVolume;
++      RooAbsPdf* sum_pdf1 = (RooAbsPdf*) bin_cache.sumPdf1;
++     // RooArgSet* obsSet = bin_cache.observables;
++      //double binVolume = bin_cache.binVolume;
+       
+-      bin_cache.SetBinCenter();
+-      double nu_b_stat = sum_pdf->getVal(*obsSet)*sum_pdf->expectedEvents(*obsSet)*binVolume - nu_b_vec.at(i);
+-      nu_b_stat_vec.at(i) = nu_b_stat;
+-    }
++      //bin_cache.SetBinCenter();
++      double nu_b_stat = sum_pdf1->getVal(*obsSet)*sum_pdf1->expectedEvents(*obsSet)*binVolume - nu_b;
++      //nu_b_stat_vec[i] = nu_b_stat;
++    //}
+     //time_after_setVal=clock();  
+     
+     // Done with the first loops.
+     // Now evaluating the function
+ 
+-    //clock_t time_before_eval, time_after_eval;
++   // clock_t time_before_eval, time_after_eval;
+ 
+     // Loop over the bins in the cache
+     //time_before_eval=clock();
+-    for( unsigned int i = 0; i < channel_cache.size(); ++i ) {
++    //for( unsigned int i = 0; i < channel_cache.size(); ++i ) {
+       
+-      BarlowCache& bin_cache = channel_cache.at(i);
++      //BarlowCache& bin_cache = channel_cache.at(i);
+ 
+-      if( !bin_cache.hasStatUncert ) {
++      //if( !bin_cache.hasStatUncert ) {
+ 	//std::cout << "Bin: " << i << " of " << channel_cache.size() 
+ 	//	  << " in channel: " << channel_name
+ 	//	  << " doesn't have stat uncertainties" << std::endl;
+-	continue;
+-      }
++//j	continue;
++  //    }
+ 
+       // Set the observable to the bin center
+-      bin_cache.SetBinCenter();
++   //   bin_cache.SetBinCenter();
+ 
+       // Get the cached objects
+       RooRealVar* gamma = bin_cache.gamma;
+@@ -564,8 +631,8 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
+ 
+       // Get the values necessary for
+       // the analytic minimization
+-      double nu_b = nu_b_vec.at(i);
+-      double nu_b_stat = nu_b_stat_vec.at(i);
++      //double nu_b = nu_b_vec.at(i);
++      //double nu_b_stat = nu_b_stat_vec.at(i);
+ 
+       double tau_val = tau->getVal();
+       double nData = bin_cache.nData;
+@@ -641,11 +708,15 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
+ 	      << " SetVal: " << time_setVal
+ 	      << " Eval: " << time_eval
+ 	      << std::endl;
+-    */
++    //8*/
+   } 
++    
+ 
++  //std::cerr.precision(16);
++  //std::cerr << _nll << std::endl;
+ 
+-  return _nll;  
++  
++  return _nll;
+ 
+ }
+ 
