@@ -35,7 +35,7 @@ stdenv.mkDerivation rec {
   };
 
   nativeBuildInputs = [ makeWrapper cmake pkg-config ];
-  buildInputs = [ pcre python zlib libxml2 lz4 lzma gsl xxHash ]
+  buildInputs = [ pcre zlib libxml2 lz4 lzma gsl xxHash python python.pkgs.numpy ]
     ++ lib.optionals (!stdenv.isDarwin) [ libX11 libXpm libXft libXext libGLU libGL expat ]
     ++ lib.optionals (stdenv.isDarwin) [ Cocoa CoreSymbolication OpenGL ]
   ;
@@ -60,7 +60,6 @@ stdenv.mkDerivation rec {
 
   cmakeFlags = [
     "-Drpath=ON"
-    "-DCMAKE_CXX_STANDARD=17"
     "-DCMAKE_INSTALL_LIBDIR=lib"
     "-DCMAKE_INSTALL_INCLUDEDIR=include"
     "-Dalien=OFF"

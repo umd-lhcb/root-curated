@@ -7,8 +7,9 @@ final: prev:
     noSplash = true;
   };
 
+  # ROOT 6.12 doesn't support Python 3 :-(
   root_6_12_06 = prev.callPackage ./root_6_12 {
-    python = final.python3;
+    python = final.python2;
     inherit (prev.darwin.apple_sdk.frameworks) Cocoa CoreSymbolication OpenGL;
     noSplash = true;
   };
