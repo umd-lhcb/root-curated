@@ -110,6 +110,93 @@ nix-collect-garbage -d
 ```
 
 
+## Create a new ROOT derivation
+
+1. Pick a base derivation to work on:
+    1. If `ROOT version > 6.24`, start from [the official derivation](https://github.com/NixOS/nixpkgs/tree/master/pkgs/applications/science/misc/root).
+
+        **Note**: It is recommended to format the official derivation with
+        `nixpkgs-fmt` so that the `diff` between the existing and
+        official derivation is more meaningful.
+
+    2. Otherwise, start with an existing derivation, for example [`nix/root_6_12`](./nix/root_6_12).
+
+2. Assume both the derivation and all patches, including the HistFactory one, work.
+   Therefore, only the ROOT version and its `sha256sum` need to be updated.
+
+    Copy and rename the base derivation folder, for example:
+
+    ```
+    root_6_12 -> root_6_18
+    ```
+
+    Denote the new folder as `root_new`
+
+3. Locate the following code in `root_new/default.nix`:
+
+    ```nix
+      pname = "root";
+      version = "X.YY.ZZ";
+
+      src = fetchurl {
+        url = "https://root.cern.ch/download/root_v${version}.source.tar.gz";
+        sha256 = "0507e1095e279ccc7240f651d25966024325179fa85a1259b694b56723ad7c1c";
+      };
+    ```
+
+    1. Update the version, i.e. `6.18.04`.
+
+    2. Download the source code locally. The URL is:
+
+        ```
+        https://root.cern.ch/download/root_v${version}.source.tar.gz
+        ```
+
+        Don't forget to replace `${version}` with the actual version!
+
+    3. Find the `sha256sum` of the source with:
+
+        ```shell
+        sha256sum <path_to_root_src>
+        ```
+
+        Then update the `sha256` attribute.
+
+4. Create a new entry in [`nix/overlay.nix`](./nix/overlay.nix), following
+   existing examples.
+
+5. Locate the following code in [`flake.nix`](./flake.nix):
+
+    ```nix
+        packages = flake-utils.lib.flattenTree {
+          dev-shell = devShell.inputDerivation;
+          root = pkgs.root;
+          root_6_12_06 = pkgs.root_6_12_06;
+          root_5_34_38 = pkgs.root_5_34_38;
+          clang-format-all = pkgs.clang-format-all;
+        };
+    ```
+
+    Append the new ROOT entry here as well.
+
+6. Test if the new ROOT compiles:
+
+    ```shell
+    nix build ".#<new_root_pkg_name_defined_in_flake>"
+    ```
+
+    If everything works, a symbolic link `result` will be created in project
+    root, pointing to the build result.
+
+    You can test this root with:
+    ```
+    ./result/bin/root
+    ```
+
+    **Note**: You should delete this symbolic link afterwards so that the build
+    will get garbage-collected in the future.
+
+
 ## Upgrade `nix`
 
 On macOS, with sudo:
