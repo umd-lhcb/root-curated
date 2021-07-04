@@ -27,7 +27,7 @@ a version of ROOT 6 w/ HistFactory patches (from Phoebe) applied.
 - [Possible problems when updateing macOS and a potential fix](https://github.com/NixOS/nix/issues/4531)
 
 
-## Install `nix` on linux
+## Install `nix` on Linux
 
 1. Go to [this project](https://github.com/numtide/nix-unstable-installer),
    copy the `sh <(curl ... )` line to your terminal and execute it.
