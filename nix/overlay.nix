@@ -18,4 +18,7 @@ final: prev:
     stdenv = if prev.stdenv.cc.isClang then prev.llvmPackages_5.stdenv else prev.gcc8Stdenv;
     noSplash = true;
   };
+
+  # General utilities
+  clang-format-all = prev.callPackage ./clang-format-all { };
 }

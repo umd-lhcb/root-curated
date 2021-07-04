@@ -25,11 +25,12 @@
           root = pkgs.root;
           root_6_12_06 = pkgs.root_6_12_06;
           root_5_34_38 = pkgs.root_5_34_38;
+          clang-format-all = pkgs.clang-format-all;
         };
         devShell = pkgs.mkShell {
           name = "root-curated";
           buildInputs = with pythonPackages; [
-            pkgs.clang-tools # For clang-format
+            pkgs.clang-tools  # For clang-format
             pkgs.root
             python  # For ROOT module test
             #pkgs.nix-info  # For bug report
