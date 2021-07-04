@@ -67,13 +67,13 @@ stdenv.mkDerivation rec {
 
   cmakeFlags = [
     "-Drpath=ON"
-    "-DCMAKE_CXX_STANDARD=11"
     "-DCMAKE_INSTALL_LIBDIR=lib"
     "-DCMAKE_INSTALL_INCLUDEDIR=include"
     "-Dalien=OFF"
     "-Dbonjour=OFF"
     "-Dcastor=OFF"
     "-Dchirp=OFF"
+    "-Dcxx11=ON"
     "-Ddavix=OFF"
     "-Ddcache=OFF"
     "-Dfftw3=OFF"
@@ -96,6 +96,7 @@ stdenv.mkDerivation rec {
     "-Dpythia8=OFF"
     "-Dpython=OFF"
     "-Drfio=OFF"
+    "-Droofit=ON"
     "-Dsqlite=OFF"
     "-Dssl=OFF"
     "-Dxml=ON"
