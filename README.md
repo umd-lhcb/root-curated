@@ -197,6 +197,19 @@ nix-collect-garbage -d
     will get garbage-collected in the future.
 
 
+## Update `flake` inputs
+
+If you want to update all inputs:
+```shell
+nix flake update
+```
+
+If you only want to update specific ones (say `stuff`):
+```shell
+nix flake lock --update-input stuff
+```
+
+
 ## Upgrade `nix`
 
 On macOS, with sudo:
