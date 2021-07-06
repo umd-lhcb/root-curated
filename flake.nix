@@ -17,7 +17,6 @@
           overlays = [ self.overlay ];
         };
         python = pkgs.python3;
-        pythonPackages = python.pkgs;
       in
       rec {
         packages = flake-utils.lib.flattenTree {
