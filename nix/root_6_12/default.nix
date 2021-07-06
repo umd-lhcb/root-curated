@@ -73,8 +73,13 @@ stdenv.mkDerivation rec {
 
   cmakeFlags = [
     "-Drpath=ON"
+    "-DCMAKE_CXX_STANDARD=11"
     "-DCMAKE_INSTALL_LIBDIR=lib"
     "-DCMAKE_INSTALL_INCLUDEDIR=include"
+    "-Dbuiltin_afterimage=OFF"
+    "-Dbuiltin_ftgl:BOOL=OFF"
+    "-Dbuiltin_glew:BOOL=ON"
+    "-Dbuiltin_unuran=OFF"
     "-Dalien=OFF"
     "-Dbonjour=OFF"
     "-Dcastor=OFF"
@@ -104,6 +109,7 @@ stdenv.mkDerivation rec {
     "-Droot7=OFF"
     "-Dsqlite=OFF"
     "-Dssl=OFF"
+    "-Dunuran:BOOL=OFF"
     "-Dvdt=OFF"
     "-Dxml=ON"
     "-Dxrootd=OFF"
