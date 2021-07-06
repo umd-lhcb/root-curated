@@ -54,21 +54,34 @@ should install it!
 
 For this guide, it is assumed that `nix` is already installed.
 
+0. Add an user-wide overlay so that your `nix-direnv` knows to use the correct
+   version of `nix`:
+
+    Add the following content to `$HOME/.config/nixpkgs/overlays/base.nix`. If
+    the directory doesn't exist, create it.
+    ```nix
+    final: prev:
+
+    {
+      nix-direnv = prev.nix-direnv.override { enableFlakes = true; };
+    }
+    ```
+
 1. Install `direnv` and `nix-direv` with:
 
     ```shell
-    nix-env -f '<nixpkgs>' -iA nix-direnv direnv
+    nix-env -iA nixpkgs.nix-direnv nixpkgs.direnv
     ```
 
-2. Update your shell configuration from `lhcb-ntuples-gen`:
+2. Update your shell configuration:
 
-    1. For `bash`:
+    1. For `bash`, edit `$HOME/.bashrc`:
 
         ```bash
         eval "$(direnv hook bash)"
         ```
 
-    2. For `zsh`:
+    2. For `zsh`, edit `$HOME/.zshrc`:
 
         ```bash
         eval "$(direnv hook zsh)"
