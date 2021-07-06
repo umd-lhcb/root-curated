@@ -1,9 +1,11 @@
-{ stdenv
+{ stdenvNoCC
+, lib
 , fetchFromGitHub
+, makeWrapper
 , clang-tools
 }:
 
-stdenv.mkDerivation rec {
+stdenvNoCC.mkDerivation rec {
   pname = "clang-format-all";
   version = "20170808";
 
@@ -14,10 +16,15 @@ stdenv.mkDerivation rec {
     sha256 = "EimKV6Efp0I501Sew//HFPvHHpgfn9E/pUnRJcTaHeA=";
   };
 
-  buildInputs = [ clang-tools ];
+  nativeBuildInputs = [ makeWrapper ];
 
   installPhase = ''
     mkdir -p $out/bin
     cp clang-format-all $out/bin
+  '';
+
+  postFixup = ''
+    wrapProgram "$out/bin/clang-format-all" \
+      --prefix PATH : "${lib.makeBinPath [ clang-tools ]}"
   '';
 }
