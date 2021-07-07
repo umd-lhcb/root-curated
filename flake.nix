@@ -16,7 +16,6 @@
           inherit system;
           overlays = [ self.overlay ];
         };
-        python = pkgs.python3;
       in
       rec {
         packages = flake-utils.lib.flattenTree {
@@ -28,11 +27,11 @@
         };
         devShell = pkgs.mkShell {
           name = "root-curated";
-          buildInputs = with pythonPackages; [
-            pkgs.clang-tools  # For clang-format
-            pkgs.root
-            python  # For ROOT module test
-            #pkgs.nix-info  # For bug report
+          buildInputs = with pkgs; [
+            clang-tools  # For clang-format
+            root
+            python3  # For ROOT module test
+            #nix-info  # For bug report
           ];
         };
       });
