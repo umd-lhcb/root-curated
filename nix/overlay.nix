@@ -7,19 +7,22 @@ final: prev:
     noSplash = true;
   };
 
-  root_6_24_00 = final.root.overrideAttrs (oldAttrs: rec {
-    version = "6.24.00";
-    src = prev.fetchurl {
-      url = "https://root.cern.ch/download/root_v${version}.source.tar.gz";
-      sha256 = "12crjzd7pzx5qpk2pb3z0rhmxlw5gsqaqzfl48qiq8c9l940b8wx";
-    };
-    patches = oldAttrs.patches ++ [ ./root/hist_factory.patch ];
+  # ROOT 6.24 stack
+  root_6_24_02 = final.root.overrideAttrs (oldAttrs: rec {
+    patches = oldAttrs.patches ++ [
+      ./root/hist_factory.patch
+      ./root/hist_factory_branch_optimization.patch
+    ];
   });
+
+  # ROOT 6.16 stack
   root_6_16_00 = prev.callPackage ./root_6_16 {
     python = final.python3;
     inherit (prev.darwin.apple_sdk.frameworks) Cocoa CoreSymbolication OpenGL;
     noSplash = true;
   };
+
+  # Older ROOTs
   # ROOT 6.12 doesn't support Python 3 and doesn't build on Big Sur :-(
   # root_6_12_06 = prev.callPackage ./root_6_12 {
   #   python = final.python2;

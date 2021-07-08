@@ -21,7 +21,7 @@
         packages = flake-utils.lib.flattenTree {
           dev-shell = devShell.inputDerivation;
           root = pkgs.root;
-          root_6_24_00 = pkgs.root_6_24_00;
+          root_6_24_02 = pkgs.root_6_24_02;
           root_6_16_00 = pkgs.root_6_16_00;
           root_5_34_38 = pkgs.root_5_34_38;
           clang-format-all = pkgs.clang-format-all;
