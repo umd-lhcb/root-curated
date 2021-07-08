@@ -92,7 +92,7 @@ index 758d68094d..f72c24ff48 100644
    RooArgList   _ownedList ;       // List of owned components
    RooListProxy _lowSet ;            // Low-side variation
 diff --git a/roofit/histfactory/inc/RooStats/HistFactory/RooBarlowBeestonLL.h b/roofit/histfactory/inc/RooStats/HistFactory/RooBarlowBeestonLL.h
-index b5e503e1a5..01a5b173cd 100644
+index ac50260857..860e5f7c30 100644
 --- a/roofit/histfactory/inc/RooStats/HistFactory/RooBarlowBeestonLL.h
 +++ b/roofit/histfactory/inc/RooStats/HistFactory/RooBarlowBeestonLL.h
 @@ -17,7 +17,6 @@
@@ -381,9 +381,16 @@ index 3fdf963839..d4f50e0724 100644
  
      proto->import(interp); // individual params have already been imported in first loop of this function
 diff --git a/roofit/histfactory/src/ParamHistFunc.cxx b/roofit/histfactory/src/ParamHistFunc.cxx
-index 66cf077d71..d693cac38f 100644
+index 66cf077d71..f6db59abf3 100644
 --- a/roofit/histfactory/src/ParamHistFunc.cxx
 +++ b/roofit/histfactory/src/ParamHistFunc.cxx
+@@ -1,5 +1,5 @@
+ // @(#)root/roostats:$Id:  cranmer $
+-// Author: Kyle Cranmer, George Lewis 
++// Author: Kyle Cranmer, George Lewis
+ /*************************************************************************
+  * Copyright (C) 1995-2008, Rene Brun and Fons Rademakers.               *
+  * All rights reserved.                                                  *
 @@ -8,40 +8,27 @@
   * For the list of contributors see $ROOTSYS/README/CREDITS.             *
   *************************************************************************/
@@ -438,7 +445,7 @@ index 66cf077d71..d693cac38f 100644
  #include "RooFit.h"
  #include "RooStats/HistFactory/ParamHistFunc.h"
  #include "RooAbsReal.h"
-@@ -62,47 +49,74 @@
+@@ -62,50 +49,77 @@
  #include "RooRealVar.h"
  #include "RooArgList.h"
  #include "RooWorkspace.h"
@@ -451,12 +458,12 @@ index 66cf077d71..d693cac38f 100644
  
 -////////////////////////////////////////////////////////////////////////////////
 +/*
-+  
++
 +  A class which maps the current values of a RooRealVar
 +  (or a set of RooRealVars) to one of a number of RooRealVars:
 +
 +  ParamHistFunc: {val1, val2, ...} -> {gamma (RooRealVar)}
-+  
++
 +  The intended interpretation is that each parameter in the
 +  range represent the height of a bin over the domain
 +  space.
@@ -470,13 +477,13 @@ index 66cf077d71..d693cac38f 100644
 +  All indices include '0'
 +
 +  gamma_i_j = paramSet[ size(i)*j + i ]
- 
++
 +  ie assuming the dimensions are 5*5:
 +  gamma_2_1 = paramSet[ 5*1 + 2 ] = paramSet[7]
 +
 + */
 +
-+
+ 
 +//_____________________________________________________________________________
  ParamHistFunc::ParamHistFunc() : _numBins(0)
  {
@@ -497,8 +504,9 @@ index 66cf077d71..d693cac38f 100644
 -///
 -/// Where the nominal values are simply fixed
 -/// numbers (default = 1.0 for all i)
+-ParamHistFunc::ParamHistFunc(const char* name, const char* title, 
 +//_____________________________________________________________________________
- ParamHistFunc::ParamHistFunc(const char* name, const char* title, 
++ParamHistFunc::ParamHistFunc(const char* name, const char* title,
  			     const RooArgList& vars, const RooArgList& paramSet) :
    RooAbsReal(name, title),
    _dataVars("!dataVars","data Vars",       this),
@@ -508,35 +516,40 @@ index 66cf077d71..d693cac38f 100644
 +  _dataSet( (std::string(name)+"_dataSet").c_str(), "", vars),
 +  _prefix("")
  {
-+  
+ 
 +  // Create a function which returns binewise-values
 +  // This class contains N RooRealVar's, one for each
 +  // bin from the given RooRealVar.
 +  //
-+  // The value of the function in the ith bin is 
++  // The value of the function in the ith bin is
 +  // given by:
 +  //
 +  // F(i) = gamma_i * nominal(i)
 +  //
 +  // Where the nominal values are simply fixed
 +  // numbers (default = 1.0 for all i)
- 
++
    // Create the dataset that stores the binning info:
-   
-   //  _dataSet = RooDataSet("
+-  
+-  //  _dataSet = RooDataSet("
  
 -  _dataSet.removeSelfFromDir(); // files must not delete _dataSet.
--
++  //  _dataSet = RooDataSet("
+ 
    // Set the binning
    // //_binning = var.getBinning().clone() ;
-   
-@@ -115,22 +129,13 @@ ParamHistFunc::ParamHistFunc(const char* name, const char* title,
+-  
++
+   // Create the set of parameters
+   // controlling the height of each bin
+ 
+@@ -115,23 +129,14 @@ ParamHistFunc::ParamHistFunc(const char* name, const char* title,
    // Add the parameters (with checking)
    addVarSet( vars );
    addParamSet( paramSet );
-+     _paramSet.setHashTableSize(12007);
++     _paramSet.useHashMapForFind(true);
 +
-+  
++
  }
  
  
@@ -553,10 +566,12 @@ index 66cf077d71..d693cac38f 100644
 -///
 -/// Where the nominal values are taken from the histogram,
 -/// and the \f$ \gamma_{i} \f$ can be set from the outside.
+-ParamHistFunc::ParamHistFunc(const char* name, const char* title, 
 +//_____________________________________________________________________________
- ParamHistFunc::ParamHistFunc(const char* name, const char* title, 
++ParamHistFunc::ParamHistFunc(const char* name, const char* title,
  			     const RooArgList& vars, const RooArgList& paramSet,
  			     const TH1* Hist ) :
+   RooAbsReal(name, title),
 @@ -139,10 +144,21 @@ ParamHistFunc::ParamHistFunc(const char* name, const char* title,
    _dataVars("!dataVars","data Vars",       this),
    _paramSet("!paramSet","bin parameters",  this),
@@ -571,7 +586,7 @@ index 66cf077d71..d693cac38f 100644
 +  // This class contains N RooRealVar's, one for each
 +  // bin from the given RooRealVar.
 +  //
-+  // The value of the function in the ith bin is 
++  // The value of the function in the ith bin is
 +  // given by:
 +  //
 +  // F(i) = gamma_i * nominal(i)
@@ -581,15 +596,46 @@ index 66cf077d71..d693cac38f 100644
  
    // Get the number of bins
    _numBins = GetNumBins( vars );
-@@ -150,6 +166,7 @@ ParamHistFunc::ParamHistFunc(const char* name, const char* title,
+@@ -150,24 +166,25 @@ ParamHistFunc::ParamHistFunc(const char* name, const char* title,
    // Add the parameters (with checking)
    addVarSet( vars );
    addParamSet( paramSet );
-+     _paramSet.setHashTableSize(12007);
-  
+- 
++     _paramSet.useHashMapForFind(true);
++
  }
  
-@@ -183,69 +200,89 @@ Int_t ParamHistFunc::GetNumBins( const RooArgSet& vars ) {
+ 
+ Int_t ParamHistFunc::GetNumBins( const RooArgSet& vars ) {
+-  
++
+   // A helper method to get the number of bins
+-  
++
+   if( vars.getSize() == 0 ) return 0;
+-    
++
+   Int_t numBins = 1;
+ 
+   RooFIter varIter = vars.fwdIterator() ;
+   RooAbsArg* comp ;
+   while((comp = (RooAbsArg*) varIter.next())) {
+     if (!dynamic_cast<RooRealVar*>(comp)) {
+-      std::cout << "ParamHistFunc::GetNumBins" << vars.GetName() << ") ERROR: component " 
+-	   << comp->GetName() 
++      std::cout << "ParamHistFunc::GetNumBins" << vars.GetName() << ") ERROR: component "
++	   << comp->GetName()
+ 	   << " in vars list is not of type RooRealVar" << std::endl ;
+       RooErrorHandler::softAbort() ;
+       return -1;
+@@ -177,75 +194,95 @@ Int_t ParamHistFunc::GetNumBins( const RooArgSet& vars ) {
+     Int_t varNumBins = var->numBins();
+     numBins *= varNumBins;
+   }
+-    
++
+   return numBins;
+ 
  }
  
  
@@ -597,7 +643,8 @@ index 66cf077d71..d693cac38f 100644
 -
 +//_____________________________________________________________________________
  ParamHistFunc::ParamHistFunc(const ParamHistFunc& other, const char* name) :
-   RooAbsReal(other, name), 
+-  RooAbsReal(other, name), 
++  RooAbsReal(other, name),
    _dataVars("!dataVars", this, other._dataVars ),
    _paramSet("!paramSet", this, other._paramSet),
    _numBins( other._numBins ),
@@ -608,10 +655,9 @@ index 66cf077d71..d693cac38f 100644
 +  _prefix(other._prefix )
  {
 -  _dataSet.removeSelfFromDir(); // files must not delete _dataSet.
--
-+     _paramSet.setHashTableSize(12007);
++     _paramSet.useHashMapForFind(true);
 +  ;
-+  
+ 
 +  RooFIter varIter = _dataVars.fwdIterator() ;
 +  RooAbsReal* comp;
 +  while((comp=(RooAbsReal*)varIter.next()))
@@ -625,8 +671,9 @@ index 66cf077d71..d693cac38f 100644
  
 -////////////////////////////////////////////////////////////////////////////////
 -
+-ParamHistFunc::~ParamHistFunc() 
 +//_____________________________________________________________________________
- ParamHistFunc::~ParamHistFunc() 
++ParamHistFunc::~ParamHistFunc()
  {
    ;
  }
@@ -722,10 +769,22 @@ index 66cf077d71..d693cac38f 100644
  
 +//_____________________________________________________________________________
  void ParamHistFunc::setShape( TH1* shape ) {
-+  
++
    int num_hist_bins = shape->GetNbinsX()*shape->GetNbinsY()*shape->GetNbinsZ();
  
    if( num_hist_bins != numBins() ) {
+@@ -280,9 +321,9 @@ void ParamHistFunc::setShape( TH1* shape ) {
+ 
+   Int_t TH1BinNumber = 0;
+   for( Int_t i = 0; i < numBins(); ++i) {
+-    
++
+     TH1BinNumber++;
+-    
++
+     while( shape->IsBinUnderflow(TH1BinNumber) || shape->IsBinOverflow(TH1BinNumber) ){
+       TH1BinNumber++;
+     }
 @@ -295,22 +336,22 @@ void ParamHistFunc::setShape( TH1* shape ) {
  }
  
@@ -743,17 +802,17 @@ index 66cf077d71..d693cac38f 100644
 -/// Store them in a list using:
 -/// _paramSet.add( createParamSet() );
 -/// This list is stored in the "TH1" index order
+-RooArgList ParamHistFunc::createParamSet(RooWorkspace& w, const std::string& Prefix, 
 +//_____________________________________________________________________________
- RooArgList ParamHistFunc::createParamSet(RooWorkspace& w, const std::string& Prefix, 
++RooArgList ParamHistFunc::createParamSet(RooWorkspace& w, const std::string& Prefix,
  					 const RooArgList& vars) {
--
-+  
+ 
 +  // Create the list of RooRealVar
 +  // parameters which represent the
 +  // height of the histogram bins.
-+  // The list 'vars' represents the 
++  // The list 'vars' represents the
 +  // observables (corresponding to histogram bins)
-+  // that these newly created parameters will 
++  // that these newly created parameters will
 +  // be mapped to. (ie, we create one parameter
 +  // per observable in vars and per bin in each observable)
 +
@@ -763,12 +822,121 @@ index 66cf077d71..d693cac38f 100644
  
    // Get the number of bins
    // in the nominal histogram
+@@ -322,13 +363,13 @@ RooArgList ParamHistFunc::createParamSet(RooWorkspace& w, const std::string& Pre
+ 
+   if( numVars == 0 ) {
+     std::cout << "Warning - ParamHistFunc::createParamSet() :"
+-	 << " No Variables provided.  Not making constraint terms." 
++	 << " No Variables provided.  Not making constraint terms."
+ 	 << std::endl;
+     return paramSet;
+   }
+ 
+   else if( numVars == 1 ) {
+- 
++
+     // For each bin, create a RooRealVar
+     for( Int_t i = 0; i < numBins; ++i) {
+ 
+@@ -336,7 +377,7 @@ RooArgList ParamHistFunc::createParamSet(RooWorkspace& w, const std::string& Pre
+       VarNameStream << Prefix << "_bin_" << i;
+       std::string VarName = VarNameStream.str();
+ 
+-      RooRealVar gamma( VarName.c_str(), VarName.c_str(), 1.0 ); 
++      RooRealVar gamma( VarName.c_str(), VarName.c_str(), 1.0 );
+       // "Hard-Code" a minimum of 0.0
+       gamma.setMin( 0.0 );
+       gamma.setConstant( false );
+@@ -350,14 +391,14 @@ RooArgList ParamHistFunc::createParamSet(RooWorkspace& w, const std::string& Pre
+   }
+ 
+   else if( numVars == 2 ) {
+- 
++
+     // Create a vector of indices
+     // all starting at 0
+     std::vector< Int_t > Indices(numVars, 0);
+ 
+     RooRealVar* varx = (RooRealVar*) vars.at(0);
+     RooRealVar* vary = (RooRealVar*) vars.at(1);
+-    
++
+     // For each bin, create a RooRealVar
+     for( Int_t j = 0; j < vary->numBins(); ++j) {
+       for( Int_t i = 0; i < varx->numBins(); ++i) {
+@@ -370,22 +411,22 @@ RooArgList ParamHistFunc::createParamSet(RooWorkspace& w, const std::string& Pre
+ 	VarNameStream << Prefix << "_bin_" << i << "_" << j;
+ 	std::string VarName = VarNameStream.str();
+ 
+-	RooRealVar gamma( VarName.c_str(), VarName.c_str(), 1.0 ); 
++	RooRealVar gamma( VarName.c_str(), VarName.c_str(), 1.0 );
+ 	// "Hard-Code" a minimum of 0.0
+ 	gamma.setMin( 0.0 );
+ 	gamma.setConstant( false );
+-	  
++
+ 	w.import( gamma, RooFit::RecycleConflictNodes() );
+ 	RooRealVar* gamma_wspace = (RooRealVar*) w.var( VarName.c_str() );
+-	  
++
+ 	paramSet.add( *gamma_wspace );
+-	  
++
+       }
+     }
+   }
+ 
+   else if( numVars == 3 ) {
+- 
++
+     // Create a vector of indices
+     // all starting at 0
+     std::vector< Int_t > Indices(numVars, 0);
+@@ -393,12 +434,12 @@ RooArgList ParamHistFunc::createParamSet(RooWorkspace& w, const std::string& Pre
+     RooRealVar* varx = (RooRealVar*) vars.at(0);
+     RooRealVar* vary = (RooRealVar*) vars.at(1);
+     RooRealVar* varz = (RooRealVar*) vars.at(2);
+-    
++
+     // For each bin, create a RooRealVar
+     for( Int_t k = 0; k < varz->numBins(); ++k) {
+       for( Int_t j = 0; j < vary->numBins(); ++j) {
+ 	for( Int_t i = 0; i < varx->numBins(); ++i) {
+-	  
++
+ 	  // Ordering is important:
+ 	  // To match TH1, list goes over x bins
+ 	  // first, then y, then z
+@@ -406,17 +447,17 @@ RooArgList ParamHistFunc::createParamSet(RooWorkspace& w, const std::string& Pre
+ 	  std::stringstream VarNameStream;
+ 	  VarNameStream << Prefix << "_bin_" << i << "_" << j << "_" << k;
+ 	  std::string VarName = VarNameStream.str();
+-	
+-	  RooRealVar gamma( VarName.c_str(), VarName.c_str(), 1.0 ); 
++
++	  RooRealVar gamma( VarName.c_str(), VarName.c_str(), 1.0 );
+ 	  // "Hard-Code" a minimum of 0.0
+ 	  gamma.setMin( 0.0 );
+ 	  gamma.setConstant( false );
+-	  
++
+ 	  w.import( gamma, RooFit::RecycleConflictNodes() );
+ 	  RooRealVar* gamma_wspace = (RooRealVar*) w.var( VarName.c_str() );
+-	  
++
+ 	  paramSet.add( *gamma_wspace );
+-	
++
+ 	}
+       }
+     }
 @@ -426,55 +467,61 @@ RooArgList ParamHistFunc::createParamSet(RooWorkspace& w, const std::string& Pre
      std::cout << " Error: ParamHistFunc doesn't support dimensions > 3D " <<  std::endl;
    }
  
+-  return paramSet;  
 +  paramSet.useHashMapForFind(true);
-   return paramSet;  
++  return paramSet;
  
  }
  
@@ -789,27 +957,29 @@ index 66cf077d71..d693cac38f 100644
 -/// _paramSet.add( createParamSet() );
 -/// ```
 -/// This list is stored in the "TH1" index order.
+-RooArgList ParamHistFunc::createParamSet(RooWorkspace& w, const std::string& Prefix, 
+-					 const RooArgList& vars, 
 +//_____________________________________________________________________________
- RooArgList ParamHistFunc::createParamSet(RooWorkspace& w, const std::string& Prefix, 
- 					 const RooArgList& vars, 
++RooArgList ParamHistFunc::createParamSet(RooWorkspace& w, const std::string& Prefix,
++					 const RooArgList& vars,
  					 Double_t gamma_min, Double_t gamma_max) {
  
 +  // Create the list of RooRealVar
 +  // parameters which represent the
 +  // height of the histogram bins.
-+  // The list 'vars' represents the 
++  // The list 'vars' represents the
 +  // observables (corresponding to histogram bins)
-+  // that these newly created parameters will 
++  // that these newly created parameters will
 +  // be mapped to. (ie, we create one parameter
 +  // per observable in vars and per bin in each observable)
-+
+ 
 +  // Store them in a list using:
 +  // _paramSet.add( createParamSet() );
 +  // This list is stored in the "TH1" index order
 +
 +  // Get the number of bins
 +  // in the nominal histogram
- 
++
 +  // We also set the parameters to have nominal min and max values
  
    RooArgList params = ParamHistFunc::createParamSet( w, Prefix, vars );
@@ -819,7 +989,7 @@ index 66cf077d71..d693cac38f 100644
 +  RooFIter paramIter = params.fwdIterator() ;
 +  RooAbsArg* comp ;
 +  while((comp = (RooAbsArg*) paramIter.next())) {
-+    
++
 +    RooRealVar* var = (RooRealVar*) comp;
  
      var->setMin( gamma_min );
@@ -837,8 +1007,9 @@ index 66cf077d71..d693cac38f 100644
 -/// parameters which represent the
 -/// height of the histogram bins.
 -/// Store them in a list
+-RooArgList ParamHistFunc::createParamSet(const std::string& Prefix, Int_t numBins, 
 +//_____________________________________________________________________________
- RooArgList ParamHistFunc::createParamSet(const std::string& Prefix, Int_t numBins, 
++RooArgList ParamHistFunc::createParamSet(const std::string& Prefix, Int_t numBins,
  					 Double_t gamma_min, Double_t gamma_max) {
  
 +  // Create the list of RooRealVar
@@ -857,7 +1028,15 @@ index 66cf077d71..d693cac38f 100644
  
      gamma_min = 0.0;
      gamma_max = 10.0;
-@@ -516,20 +563,22 @@ RooArgList ParamHistFunc::createParamSet(const std::string& Prefix, Int_t numBin
+@@ -509,27 +556,29 @@ RooArgList ParamHistFunc::createParamSet(const std::string& Prefix, Int_t numBin
+     VarNameStream << Prefix << "_bin_" << i;
+     std::string VarName = VarNameStream.str();
+ 
+-    RooRealVar* gamma = new RooRealVar( VarName.c_str(), VarName.c_str(), 
++    RooRealVar* gamma = new RooRealVar( VarName.c_str(), VarName.c_str(),
+ 					gamma_nominal, gamma_min, gamma_max );
+     gamma->setConstant( false );
+     paramSet.add( *gamma );
  
    }
  
@@ -876,19 +1055,28 @@ index 66cf077d71..d693cac38f 100644
 -/// list of vars
 +//_____________________________________________________________________________
  Int_t ParamHistFunc::addVarSet( const RooArgList& vars ) {
--
-+  
+ 
 +  // return 0 for success
 +  // return 1 for failure
-+  
-+  // Check that the elements 
++
++  // Check that the elements
 +  // are actually RooRealVar's
-+  // If so, add them to the 
++  // If so, add them to the
 +  // list of vars
  
    int numVars = 0;
  
-@@ -545,6 +594,7 @@ Int_t ParamHistFunc::addVarSet( const RooArgList& vars ) {
+@@ -537,14 +586,15 @@ Int_t ParamHistFunc::addVarSet( const RooArgList& vars ) {
+   RooAbsArg* comp ;
+   while((comp = (RooAbsArg*) varIter.next())) {
+     if (!dynamic_cast<RooRealVar*>(comp)) {
+-      coutE(InputArguments) << "ParamHistFunc::(" << GetName() << ") ERROR: component " 
+-			    << comp->GetName() << " in variables list is not of type RooRealVar" 
++      coutE(InputArguments) << "ParamHistFunc::(" << GetName() << ") ERROR: component "
++			    << comp->GetName() << " in variables list is not of type RooRealVar"
+ 			    << std::endl;
+       RooErrorHandler::softAbort() ;
+       return 1;
      }
  
      _dataVars.add( *comp );
@@ -896,32 +1084,36 @@ index 66cf077d71..d693cac38f 100644
      numVars++;
  
    }
-@@ -591,6 +641,7 @@ Int_t ParamHistFunc::addVarSet( const RooArgList& vars ) {
- 	Int_t TH1HistBin    = i + j*numBinsX + k*numBinsX*numBinsY; 
- 	  
+@@ -573,7 +623,7 @@ Int_t ParamHistFunc::addVarSet( const RooArgList& vars ) {
+     numBinsZ = varZ->numBins();
+   } else {
+     std::cout << "ParamHistFunc() - Only works for 1-3 variables (1d-3d)" << std::endl;
+-    throw -1;  
++    throw -1;
+   }
+ 
+   // Fill the mapping between
+@@ -586,24 +636,25 @@ Int_t ParamHistFunc::addVarSet( const RooArgList& vars ) {
+   for( Int_t i = 0; i < numBinsX; ++i ) {
+     for( Int_t j = 0; j < numBinsY; ++j ) {
+       for( Int_t k = 0; k < numBinsZ; ++k ) {
+-	
+-	Int_t RooDataSetBin = k + j*numBinsZ + i*numBinsY*numBinsZ; 
+-	Int_t TH1HistBin    = i + j*numBinsX + k*numBinsX*numBinsY; 
+-	  
++
++	Int_t RooDataSetBin = k + j*numBinsZ + i*numBinsY*numBinsZ;
++	Int_t TH1HistBin    = i + j*numBinsX + k*numBinsX*numBinsY;
++
  	_binMap[RooDataSetBin] = TH1HistBin;
+-	
 +        _nameCache.push_back("");
- 	
++
        }
      }
-@@ -601,9 +652,9 @@ Int_t ParamHistFunc::addVarSet( const RooArgList& vars ) {
- }
- 
- 
--////////////////////////////////////////////////////////////////////////////////
--
-+//_____________________________________________________________________________
- Int_t ParamHistFunc::addParamSet( const RooArgList& params ) {
-+  
-   // return 0 for success
-   // return 1 for failure
- 
-@@ -642,33 +693,51 @@ Int_t ParamHistFunc::addParamSet( const RooArgList& params ) {
-     _paramSet.add( *comp );
- 
    }
-+  _paramSet.setHashTableSize(12007);
-   
+-  
++
    return 0;
  
  }
@@ -930,14 +1122,68 @@ index 66cf077d71..d693cac38f 100644
 -////////////////////////////////////////////////////////////////////////////////
 -
 +//_____________________________________________________________________________
- Double_t ParamHistFunc::evaluate() const 
+ Int_t ParamHistFunc::addParamSet( const RooArgList& params ) {
++
+   // return 0 for success
+   // return 1 for failure
+ 
+@@ -614,7 +665,7 @@ Int_t ParamHistFunc::addParamSet( const RooArgList& params ) {
+   Int_t numElements = params.getSize();
+ 
+   if( numVarBins != numElements ) {
+-    std::cout << "ParamHistFunc::addParamSet - ERROR - " 
++    std::cout << "ParamHistFunc::addParamSet - ERROR - "
+ 	      << "Supplied list of parameters " << params.GetName()
+ 	      << " has " << numElements << " elements but the ParamHistFunc"
+ 	      << GetName() << " has " << numVarBins << " bins."
+@@ -622,18 +673,18 @@ Int_t ParamHistFunc::addParamSet( const RooArgList& params ) {
+     return 1;
+ 
+   }
+-  
+-  // Check that the elements 
++
++  // Check that the elements
+   // are actually RooRealVar's
+-  // If so, add them to the 
++  // If so, add them to the
+   // list of params
+ 
+   RooFIter paramIter = params.fwdIterator() ;
+   RooAbsArg* comp ;
+   while((comp = (RooAbsArg*) paramIter.next())) {
+     if (!dynamic_cast<RooRealVar*>(comp)) {
+-      coutE(InputArguments) << "ParamHistFunc::(" << GetName() << ") ERROR: component " 
+-			    << comp->GetName() << " in paramater list is not of type RooRealVar" 
++      coutE(InputArguments) << "ParamHistFunc::(" << GetName() << ") ERROR: component "
++			    << comp->GetName() << " in paramater list is not of type RooRealVar"
+ 			    << std::endl;
+       RooErrorHandler::softAbort() ;
+       return 1;
+@@ -642,33 +693,51 @@ Int_t ParamHistFunc::addParamSet( const RooArgList& params ) {
+     _paramSet.add( *comp );
+ 
+   }
+-  
++  _paramSet.useHashMapForFind(true);
++
+   return 0;
+ 
+ }
+ 
+ 
+-////////////////////////////////////////////////////////////////////////////////
+-
+-Double_t ParamHistFunc::evaluate() const 
++//_____________________________________________________________________________
++Double_t ParamHistFunc::evaluate() const
  {
 +
    // Find the bin cooresponding to the current
    // value of the RooRealVar:
-+  
  
 -  RooRealVar* param = (RooRealVar*) &(getParameter());
++
 +  RooRealVar* param;
 +  //if((_prefix!="") && (_dataVars.getSize()==3))
 +  // {
@@ -953,28 +1199,46 @@ index 66cf077d71..d693cac38f 100644
 +  // {
 +  //   std::cerr << "Problem: _prefix was " << _prefix << std::endl;
 +  // }
-+   
++
 +  param = (RooRealVar*) &(getParameter());
    Double_t value = param->getVal();
    return value;
-   
- }
+-  
+-}
  
++}
  
 -////////////////////////////////////////////////////////////////////////////////
 -/// Advertise that all integrals can be handled internally.
--
+ 
+-Int_t ParamHistFunc::getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& analVars, 
+-					     const RooArgSet* normSet, 
+-					     const char* /*rangeName*/) const 
 +//_____________________________________________________________________________
- Int_t ParamHistFunc::getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& analVars, 
- 					     const RooArgSet* normSet, 
- 					     const char* /*rangeName*/) const 
++Int_t ParamHistFunc::getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& analVars,
++					     const RooArgSet* normSet,
++					     const char* /*rangeName*/) const
  {
 +  // Advertise that all integrals can be handled internally.
 +
    // Handle trivial no-integration scenario
    if (allVars.getSize()==0) return 0 ;
    if (_forceNumInt) return 0 ;
-@@ -695,13 +764,13 @@ Int_t ParamHistFunc::getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& anal
+@@ -683,31 +752,31 @@ Int_t ParamHistFunc::getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& anal
+   if (cache) {
+     return _normIntMgr.lastIndex()+1 ;
+   }
+-  
++
+   // Create new cache element
+   cache = new CacheElem ;
+ 
+   // Store cache element
+   Int_t code = _normIntMgr.setObj(normSet,&analVars,(RooAbsCacheElement*)cache,0) ;
+ 
+-  return code+1 ; 
++  return code+1 ;
+ 
  }
  
  
@@ -984,22 +1248,37 @@ index 66cf077d71..d693cac38f 100644
 -
 +//_____________________________________________________________________________
  Double_t ParamHistFunc::analyticalIntegralWN(Int_t /*code*/, const RooArgSet* /*normSet2*/,
- 					     const char* /*rangeName*/) const 
+-					     const char* /*rangeName*/) const 
++					     const char* /*rangeName*/) const
  {
 +  // Implement analytical integrations by doing appropriate weighting from  component integrals
 +  // functions to integrators of components
 +
    Double_t value(0) ;
  
-   // Simply loop over bins, 
-@@ -716,7 +785,6 @@ Double_t ParamHistFunc::analyticalIntegralWN(Int_t /*code*/, const RooArgSet* /*
+-  // Simply loop over bins, 
++  // Simply loop over bins,
+   // get the height, and
+   // multiply by the bind width
+-  
++
+   RooFIter paramIter = _paramSet.fwdIterator();
+   RooRealVar* param = NULL;
+   Int_t nominalItr = 0;
+@@ -715,11 +784,10 @@ Double_t ParamHistFunc::analyticalIntegralWN(Int_t /*code*/, const RooArgSet* /*
+ 
      // Get the gamma's value
      Double_t paramVal  = (*param).getVal();
-     
+-    
 -    // Get the bin volume
++
      _dataSet.get( nominalItr );
      Double_t binVolumeDS  = _dataSet.binVolume(); //_binning->binWidth( nominalItr );
-     
+-    
++
+     // Finally, get the subtotal
+     value += paramVal*binVolumeDS;
+ 
 @@ -743,14 +811,17 @@ Double_t ParamHistFunc::analyticalIntegralWN(Int_t /*code*/, const RooArgSet* /*
  
  
@@ -1012,7 +1291,7 @@ index 66cf077d71..d693cac38f 100644
 -std::list<Double_t>* ParamHistFunc::plotSamplingHint(RooAbsRealLValue& obs, Double_t xlo, 
 -						Double_t xhi) const
 +//_____________________________________________________________________________
-+std::list<Double_t>* ParamHistFunc::plotSamplingHint(RooAbsRealLValue& /*obs*/, Double_t /*xlo*/, 
++std::list<Double_t>* ParamHistFunc::plotSamplingHint(RooAbsRealLValue& /*obs*/, Double_t /*xlo*/,
 +						Double_t /*xhi*/) const
  {
 +  // Return sampling hint for making curves of (projections) of this function
@@ -1025,7 +1304,7 @@ index 66cf077d71..d693cac38f 100644
    // copied and edited from RooHistFunc
    RooAbsLValue* lvarg = &obs;
  
-@@ -758,7 +829,7 @@ std::list<Double_t>* ParamHistFunc::plotSamplingHint(RooAbsRealLValue& obs, Doub
+@@ -758,14 +829,14 @@ std::list<Double_t>* ParamHistFunc::plotSamplingHint(RooAbsRealLValue& obs, Doub
    const RooAbsBinning* binning = lvarg->getBinningPtr(0) ;
    Double_t* boundaries = binning->array() ;
  
@@ -1034,6 +1313,14 @@ index 66cf077d71..d693cac38f 100644
  
    // Widen range slighty
    xlo = xlo - 0.01*(xhi-xlo) ;
+   xhi = xhi + 0.01*(xhi-xlo) ;
+ 
+   Double_t delta = (xhi-xlo)*1e-8 ;
+- 
++
+   // Construct array with pairs of points positioned epsilon to the left and
+   // right of the bin boundaries
+   for (Int_t i=0 ; i<binning->numBoundaries() ; i++) {
 @@ -774,18 +845,23 @@ std::list<Double_t>* ParamHistFunc::plotSamplingHint(RooAbsRealLValue& obs, Doub
        hint->push_back(boundaries[i]+delta) ;
      }
@@ -1052,8 +1339,8 @@ index 66cf077d71..d693cac38f 100644
 -std::list<Double_t>* ParamHistFunc::binBoundaries(RooAbsRealLValue& obs, Double_t xlo, 
 -						  Double_t xhi) const 
 +//______________________________________________________________________________
-+std::list<Double_t>* ParamHistFunc::binBoundaries(RooAbsRealLValue& /*obs*/, Double_t /*xlo*/, 
-+						  Double_t /*xhi*/) const 
++std::list<Double_t>* ParamHistFunc::binBoundaries(RooAbsRealLValue& /*obs*/, Double_t /*xlo*/,
++						  Double_t /*xhi*/) const
  {
 +  // Return sampling hint for making curves of (projections) of this function
 +  // as the recursive division strategy of RooCurve cannot deal efficiently
@@ -1893,10 +2180,17 @@ index f7e3cd4c12..c2e7948cb1 100644
    if (_highIter) {
      _highIter->Reset() ;
 diff --git a/roofit/histfactory/src/RooBarlowBeestonLL.cxx b/roofit/histfactory/src/RooBarlowBeestonLL.cxx
-index e2f9f70612..674cf7f4a4 100644
+index 2a45d30741..a655c1e495 100644
 --- a/roofit/histfactory/src/RooBarlowBeestonLL.cxx
 +++ b/roofit/histfactory/src/RooBarlowBeestonLL.cxx
-@@ -9,20 +9,21 @@
+@@ -1,5 +1,5 @@
+ // @(#)root/roostats:$Id$
+-// Author: Kyle Cranmer, George Lewis 
++// Author: Kyle Cranmer, George Lewis
+ /*************************************************************************
+  * Copyright (C) 1995-2008, Rene Brun and Fons Rademakers.               *
+  * All rights reserved.                                                  *
+@@ -9,29 +9,34 @@
   *************************************************************************/
  
  //////////////////////////////////////////////////////////////////////////////
@@ -1905,7 +2199,8 @@ index e2f9f70612..674cf7f4a4 100644
  //
 +// BEGIN_HTML
  // Class RooBarlowBeestonLL implements the profile likelihood estimator for
- // a given likelihood and set of parameters of interest. The value return by 
+-// a given likelihood and set of parameters of interest. The value return by 
++// a given likelihood and set of parameters of interest. The value return by
  // RooBarlowBeestonLL is the input likelihood nll minimized w.r.t all nuisance parameters
  // (which are all parameters except for those listed in the constructor) minus
  // the -log(L) of the best fit. Note that this function is slow to evaluate
@@ -1919,11 +2214,15 @@ index e2f9f70612..674cf7f4a4 100644
 -#include <iostream>
 +#include <math.h>
 +
-+#include "Riostream.h" 
++#include "Riostream.h"
  
  #include "RooFit.h"
- #include "RooStats/HistFactory/RooBarlowBeestonLL.h" 
-@@ -31,7 +32,11 @@
+-#include "RooStats/HistFactory/RooBarlowBeestonLL.h" 
+-#include "RooAbsReal.h" 
+-#include "RooAbsData.h" 
++#include "RooStats/HistFactory/RooBarlowBeestonLL.h"
++#include "RooAbsReal.h"
++#include "RooAbsData.h"
  //#include "RooMinuit.h"
  #include "RooMsgService.h"
  #include "RooRealVar.h"
@@ -1935,7 +2234,7 @@ index e2f9f70612..674cf7f4a4 100644
  
  #include "RooStats/RooStatsUtils.h"
  #include "RooProdPdf.h"
-@@ -39,17 +44,17 @@
+@@ -39,41 +44,42 @@
  #include "RooSimultaneous.h"
  #include "RooArgList.h"
  #include "RooAbsCategoryLValue.h"
@@ -1947,66 +2246,95 @@ index e2f9f70612..674cf7f4a4 100644
  using namespace std ;
  
 -ClassImp(RooStats::HistFactory::RooBarlowBeestonLL); 
--
-+ClassImp(RooStats::HistFactory::RooBarlowBeestonLL) 
++ClassImp(RooStats::HistFactory::RooBarlowBeestonLL)
+ 
  
 -////////////////////////////////////////////////////////////////////////////////
- 
-+//_____________________________________________________________________________ 
-  RooStats::HistFactory::RooBarlowBeestonLL::RooBarlowBeestonLL() : 
-    RooAbsReal("RooBarlowBeestonLL","RooBarlowBeestonLL"), 
-    _nll(), 
-@@ -57,6 +62,7 @@ ClassImp(RooStats::HistFactory::RooBarlowBeestonLL);
+-
+- RooStats::HistFactory::RooBarlowBeestonLL::RooBarlowBeestonLL() : 
+-   RooAbsReal("RooBarlowBeestonLL","RooBarlowBeestonLL"), 
+-   _nll(), 
+-//   _obs("paramOfInterest","Parameters of interest",this), 
++//_____________________________________________________________________________
++ RooStats::HistFactory::RooBarlowBeestonLL::RooBarlowBeestonLL() :
++   RooAbsReal("RooBarlowBeestonLL","RooBarlowBeestonLL"),
++   _nll(),
++//   _obs("paramOfInterest","Parameters of interest",this),
  //  _par("nuisanceParam","Nuisance parameters",this,kFALSE,kFALSE),
    _pdf(NULL), _data(NULL)
- { 
+-{ 
+-  // Default constructor 
+-  // Should only be used by proof. 
+-  //  _piter = _par.createIterator() ; 
+-  //  _oiter = _obs.createIterator() ; 
+-} 
+-
++{
 +  // this->_clientList.setHashTableSize(12007);
-   // Default constructor 
-   // Should only be used by proof. 
-   //  _piter = _par.createIterator() ; 
-@@ -64,8 +70,7 @@ ClassImp(RooStats::HistFactory::RooBarlowBeestonLL);
- } 
- 
++  // Default constructor
++  // Should only be used by proof.
++  //  _piter = _par.createIterator() ;
++  //  _oiter = _obs.createIterator() ;
++}
  
 -////////////////////////////////////////////////////////////////////////////////
--
+ 
+-RooStats::HistFactory::RooBarlowBeestonLL::RooBarlowBeestonLL(const char *name, const char *title, 
 +//_____________________________________________________________________________
- RooStats::HistFactory::RooBarlowBeestonLL::RooBarlowBeestonLL(const char *name, const char *title, 
++RooStats::HistFactory::RooBarlowBeestonLL::RooBarlowBeestonLL(const char *name, const char *title,
  				       RooAbsReal& nllIn /*, const RooArgSet& observables*/) :
-   RooAbsReal(name,title), 
-@@ -74,6 +79,7 @@ RooStats::HistFactory::RooBarlowBeestonLL::RooBarlowBeestonLL(const char *name,
+-  RooAbsReal(name,title), 
++  RooAbsReal(name,title),
+   _nll("input","-log(L) function",this,nllIn),
+   //  _obs("paramOfInterest","Parameters of interest",this),
    //  _par("nuisanceParam","Nuisance parameters",this,kFALSE,kFALSE),
    _pdf(NULL), _data(NULL)
- { 
+-{ 
++{
 +  //    this->_clientList.setHashTableSize(12007);
    // Constructor of profile likelihood given input likelihood nll w.r.t
    // the given set of variables. The input log likelihood is minimized w.r.t
    // to all other variables of the likelihood at each evaluation and the
-@@ -97,8 +103,7 @@ RooStats::HistFactory::RooBarlowBeestonLL::RooBarlowBeestonLL(const char *name,
- 
+@@ -93,20 +99,20 @@ RooStats::HistFactory::RooBarlowBeestonLL::RooBarlowBeestonLL(const char *name,
+   _piter = _par.createIterator() ;
+   _oiter = _obs.createIterator() ;
+   */
+-} 
+-
++}
  
  
 -////////////////////////////////////////////////////////////////////////////////
--
+ 
+-RooStats::HistFactory::RooBarlowBeestonLL::RooBarlowBeestonLL(const RooBarlowBeestonLL& other, const char* name) :  
+-  RooAbsReal(other,name), 
 +//_____________________________________________________________________________
- RooStats::HistFactory::RooBarlowBeestonLL::RooBarlowBeestonLL(const RooBarlowBeestonLL& other, const char* name) :  
-   RooAbsReal(other,name), 
++RooStats::HistFactory::RooBarlowBeestonLL::RooBarlowBeestonLL(const RooBarlowBeestonLL& other, const char* name) :
++  RooAbsReal(other,name),
    _nll("nll",this,other._nll),
-@@ -107,6 +112,7 @@ RooStats::HistFactory::RooBarlowBeestonLL::RooBarlowBeestonLL(const RooBarlowBee
+   //  _obs("obs",this,other._obs),
+   //  _par("par",this,other._par),
    _pdf(NULL), _data(NULL),
    _paramFixed(other._paramFixed)
- { 
+-{ 
++{
 +  //    this->_clientList.setHashTableSize(12007);
    // Copy constructor
  
    //  _piter = _par.createIterator() ;
-@@ -119,11 +125,11 @@ RooStats::HistFactory::RooBarlowBeestonLL::RooBarlowBeestonLL(const RooBarlowBee
+@@ -114,29 +120,28 @@ RooStats::HistFactory::RooBarlowBeestonLL::RooBarlowBeestonLL(const RooBarlowBee
  
+   // _paramAbsMin.addClone(other._paramAbsMin) ;
+   // _obsAbsMin.addClone(other._obsAbsMin) ;
+-    
+-} 
+ 
++}
  
  
 -////////////////////////////////////////////////////////////////////////////////
 -/// Destructor
--
+ 
 +//_____________________________________________________________________________
  RooStats::HistFactory::RooBarlowBeestonLL::~RooBarlowBeestonLL()
  {
@@ -2015,7 +2343,12 @@ index e2f9f70612..674cf7f4a4 100644
    // Delete instance of minuit if it was ever instantiated
    // if (_minuit) {
    //   delete _minuit ;
-@@ -135,8 +141,7 @@ RooStats::HistFactory::RooBarlowBeestonLL::~RooBarlowBeestonLL()
+   // }
+ 
+-  
++
+   //delete _piter ;
+   //delete _oiter ;
  }
  
  
@@ -2025,7 +2358,7 @@ index e2f9f70612..674cf7f4a4 100644
  void RooStats::HistFactory::RooBarlowBeestonLL::BarlowCache::SetBinCenter() const {
    TIterator* iter = bin_center->createIterator() ;
    RooRealVar* var;
-@@ -148,9 +153,9 @@ void RooStats::HistFactory::RooBarlowBeestonLL::BarlowCache::SetBinCenter() cons
+@@ -148,18 +153,18 @@ void RooStats::HistFactory::RooBarlowBeestonLL::BarlowCache::SetBinCenter() cons
  }
  
  
@@ -2037,7 +2370,23 @@ index e2f9f70612..674cf7f4a4 100644
    bool verbose=false;
  
    if(!_data) {
-@@ -193,11 +198,24 @@ void RooStats::HistFactory::RooBarlowBeestonLL::initializeBarlowCache() {
+     std::cout << "Error: Must initialize data before initializing cache" << std::endl;
+-    throw std::runtime_error("Uninitialized Data");    
++    throw std::runtime_error("Uninitialized Data");
+   }
+   if(!_pdf) {
+     std::cout << "Error: Must initialize model pdf before initializing cache" << std::endl;
+-    throw std::runtime_error("Uninitialized model pdf");    
++    throw std::runtime_error("Uninitialized model pdf");
+   }
+ 
+   // Get the data bin values for all channels and bins
+@@ -189,15 +194,28 @@ void RooStats::HistFactory::RooBarlowBeestonLL::initializeBarlowCache() {
+   RooArgSet* channelsWithConstraints = new RooArgSet();
+   getChannelsFromModel( _pdf, channels, channelsWithConstraints );
+   */
+-  
++
    // Loop over the channels
    RooSimultaneous* simPdf = (RooSimultaneous*) _pdf;
    RooCategory* channelCat = (RooCategory*) (&simPdf->indexCat());
@@ -2047,13 +2396,13 @@ index e2f9f70612..674cf7f4a4 100644
 +  while((tt=(RooCatType*) iter->Next())) {
 +    /*
 +      std::string ChannelName = tt->GetName();
-+      
++
 +      HHChannel_hh_edit
-+      
++
 +      TIterator* iter_channels = channelsWithConstraints->createIterator();
 +      RooAbsPdf* channelPdf=NULL;
 +      while(( channelPdf=(RooAbsPdf*)iter_channels->Next()  )) {
-+      
++
 +      std::string channel_name = RooStats::channelNameFromPdf( channelPdf );
 +    */
  
@@ -2064,7 +2413,7 @@ index e2f9f70612..674cf7f4a4 100644
      std::string channel_name = channelPdf->GetName();
  
      // First, we check if this channel uses Stat Uncertainties:
-@@ -214,8 +232,10 @@ void RooStats::HistFactory::RooBarlowBeestonLL::initializeBarlowCache() {
+@@ -214,20 +232,54 @@ void RooStats::HistFactory::RooBarlowBeestonLL::initializeBarlowCache() {
      }
      else {
        if(verbose) std::cout << "Found ParamHistFunc: " << param_func->GetName() << std::endl;
@@ -2075,14 +2424,20 @@ index e2f9f70612..674cf7f4a4 100644
      // Now, loop over the bins in this channel
      // To Do: Check that the index convention
      // still works for 2-d (ie matches the
-@@ -228,6 +248,38 @@ void RooStats::HistFactory::RooBarlowBeestonLL::initializeBarlowCache() {
+     // convention in ParamHistFunc, etc)
+     int num_bins = param_func->numBins();
+-  
++
+     // Initialize the vector to the number of bins, allowing
+     // us to skip gamma's if they are constant
+ 
      std::vector<BarlowCache> temp_cache( num_bins );
      bool channel_has_stat_uncertainty=false;
  
 +
 +      RooRealSumPdf* base_sum_pdf = (RooRealSumPdf*)getSumPdfFromChannel( channelPdf );
 +
-+      
++
 +      if( base_sum_pdf == NULL )  {
 +	std::cout << "Failed to find RooRealSumPdf in channel " <<  channel_name
 +		  << ", therefor skipping this channel for analytic uncertainty minimization"
@@ -2090,8 +2445,8 @@ index e2f9f70612..674cf7f4a4 100644
 +	channel_has_stat_uncertainty=false;
 +	break;
 +      }
-+      
-+      
++
++
 +      RooConstVar *zero = new RooConstVar("zero","zero",0.0);
 +      RooConstVar *one = new RooConstVar("one","one",1.0);
 +      RooCustomizer cust0(*((RooAbsArg*)base_sum_pdf),(channel_name+"cust0").c_str());
@@ -2101,7 +2456,7 @@ index e2f9f70612..674cf7f4a4 100644
 +      cust1.replaceArg(*param_func,*one);
 +      RooAbsPdf* sum_pdf_1 = (RooAbsPdf*)cust1.build(kTRUE);
 +      this->addOwnedComponents(RooArgSet(*sum_pdf_1, *sum_pdf_0));
-+      
++
 +      RooFIter sumIter(base_sum_pdf->funcList().fwdIterator());
 +      RooAbsArg *comp;
 +      int noStat=0;
@@ -2151,7 +2506,19 @@ index e2f9f70612..674cf7f4a4 100644
  
        // And set the data value for this bin
        if( ChannelBinDataMap.find(channel_name) == ChannelBinDataMap.end() ) {
-@@ -302,6 +351,21 @@ void RooStats::HistFactory::RooBarlowBeestonLL::initializeBarlowCache() {
+@@ -292,18 +341,33 @@ void RooStats::HistFactory::RooBarlowBeestonLL::initializeBarlowCache() {
+       }
+       double nData = ChannelBinDataMap[channel_name].at(bin_index);
+       cache.nData = nData;
+-      
++
+       temp_cache.at(bin_index) = cache;
+       //_barlowCache[channel_name].at(bin_index) = cache;
+ 
+     } // End: Loop over bins
+-    
++
+     if( channel_has_stat_uncertainty ) {
        std::cout << "Adding channel: " << channel_name
  		<< " to the barlow cache" << std::endl;
        _barlowCache[channel_name] = temp_cache;
@@ -2171,55 +2538,53 @@ index e2f9f70612..674cf7f4a4 100644
 +
 +
      }
-     
- 
-@@ -354,9 +418,9 @@ void RooStats::HistFactory::RooBarlowBeestonLL::initializeBarlowCache() {
- }
- 
- 
--////////////////////////////////////////////////////////////////////////////////
--
-+//_____________________________________________________________________________
- RooArgSet* RooStats::HistFactory::RooBarlowBeestonLL::getParameters(const RooArgSet* depList, Bool_t stripDisconnected) const {
+-    
 +
-   RooArgSet* allArgs = RooAbsArg::getParameters( depList, stripDisconnected );
  
-   TIterator* iter_args = allArgs->createIterator();
-@@ -367,9 +431,10 @@ RooArgSet* RooStats::HistFactory::RooBarlowBeestonLL::getParameters(const RooArg
-     // If there is a gamma in the name,
-     // strip it from the list of dependencies
+   } // End: Loop over channels
  
--    if( _statUncertParams.find(arg_name.c_str()) != _statUncertParams.end() ) {
--      allArgs->remove( *arg, kTRUE );
--    }
-+    allArgs->remove(*(allArgs->selectByName("*gamma_stat*")),kTRUE,kTRUE);
-+    // if( _statUncertParams.find(arg_name.c_str()) != _statUncertParams.end() ) {
-+    //   allArgs->remove( *arg, kTRUE );
-+    // }
+@@ -314,7 +378,7 @@ void RooStats::HistFactory::RooBarlowBeestonLL::initializeBarlowCache() {
+   /*
+   std::map< std::string, std::vector< BarlowCache > >::iterator iter_cache;
+   for( iter_cache = _barlowCache.begin(); iter_cache != _barlowCache.end(); ++iter_cache ) {
+-    
++
+     std::string channel_name = (*iter_cache).first;
+     std::vector< BarlowCache >& channel_cache = (*iter_cache).second;
  
-   }
- 
-@@ -379,8 +444,7 @@ RooArgSet* RooStats::HistFactory::RooBarlowBeestonLL::getParameters(const RooArg
+@@ -333,7 +397,7 @@ void RooStats::HistFactory::RooBarlowBeestonLL::initializeBarlowCache() {
+       if( !bin_cache.hasStatUncert ) {
+ 	std::cout << "Barlow Cache for Channel: " << channel_name
+ 		  << " Bin: " << i
+-		  << " NO STAT UNCERT" 
++		  << " NO STAT UNCERT"
+ 		  << std::endl;
+       }
+       else {
+@@ -378,18 +442,16 @@ bool RooStats::HistFactory::RooBarlowBeestonLL::getParameters(const RooArgSet* d
  
  
  /*
 -////////////////////////////////////////////////////////////////////////////////
 -
+-const RooArgSet& RooStats::HistFactory::RooBarlowBeestonLL::bestFitParams() const 
 +//_____________________________________________________________________________
- const RooArgSet& RooStats::HistFactory::RooBarlowBeestonLL::bestFitParams() const 
++const RooArgSet& RooStats::HistFactory::RooBarlowBeestonLL::bestFitParams() const
  {
    validateAbsMin() ;
-@@ -388,8 +452,7 @@ const RooArgSet& RooStats::HistFactory::RooBarlowBeestonLL::bestFitParams() cons
+   return _paramAbsMin ;
  }
  
  
 -////////////////////////////////////////////////////////////////////////////////
 -
+-const RooArgSet& RooStats::HistFactory::RooBarlowBeestonLL::bestFitObs() const 
 +//_____________________________________________________________________________
- const RooArgSet& RooStats::HistFactory::RooBarlowBeestonLL::bestFitObs() const 
++const RooArgSet& RooStats::HistFactory::RooBarlowBeestonLL::bestFitObs() const
  {
    validateAbsMin() ;
-@@ -399,14 +462,14 @@ const RooArgSet& RooStats::HistFactory::RooBarlowBeestonLL::bestFitObs() const
+   return _obsAbsMin ;
+@@ -398,14 +460,14 @@ const RooArgSet& RooStats::HistFactory::RooBarlowBeestonLL::bestFitObs() const
  
  
  
@@ -2230,36 +2595,44 @@ index e2f9f70612..674cf7f4a4 100644
 -
 +//_____________________________________________________________________________
  /*
- RooAbsReal* RooStats::HistFactory::RooBarlowBeestonLL::createProfile(const RooArgSet& paramsOfInterest) 
+-RooAbsReal* RooStats::HistFactory::RooBarlowBeestonLL::createProfile(const RooArgSet& paramsOfInterest) 
++RooAbsReal* RooStats::HistFactory::RooBarlowBeestonLL::createProfile(const RooArgSet& paramsOfInterest)
  {
 +  // Optimized implementation of createProfile for profile likelihoods.
-+  // Return profile of original function in terms of stated parameters 
++  // Return profile of original function in terms of stated parameters
 +  // of interest rather than profiling recursively.
 +
    return nll().createProfile(paramsOfInterest) ;
  }
  */
-@@ -442,10 +505,10 @@ void RooStats::HistFactory::RooBarlowBeestonLL::FactorizePdf(const RooArgSet &ob
+@@ -437,14 +499,14 @@ void RooStats::HistFactory::RooBarlowBeestonLL::FactorizePdf(const RooArgSet &ob
+     if (!constraints.contains(pdf)) constraints.add(pdf);
+   }
+ }
+-*/                                         
++*/
  
  
  
 -////////////////////////////////////////////////////////////////////////////////
--
 +//_____________________________________________________________________________
- Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const 
- { 
-+
++Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
++{
+ 
+-Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const 
+-{ 
    /*
    // Loop over the cached bins and channels
    RooArgSet* channels = new RooArgSet();
-@@ -461,12 +524,13 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
+@@ -460,18 +522,19 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
  
    // Loop over the channels (keys to the map)
    //clock_t time_before_setVal, time_after_setVal;
 -  //time_before_setVal=clock();  
    std::map< std::string, std::vector< BarlowCache > >::iterator iter_cache;
    for( iter_cache = _barlowCache.begin(); iter_cache != _barlowCache.end(); ++iter_cache ) {
-     
+-    
++
      std::string channel_name = (*iter_cache).first;
      std::vector< BarlowCache >& channel_cache = (*iter_cache).second;
 +    //std::vector< double >& nu_b_vec = _nu_b_vec[channel_name];
@@ -2267,7 +2640,15 @@ index e2f9f70612..674cf7f4a4 100644
  
      /* Slower way to find the channel vector:
      // Get the vector of bin uncertainty caches for this channel
-@@ -481,69 +545,82 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
+     if( _barlowCache.find( channel_name ) == _barlowCache.end() ) {
+-      std::cout << "Error: channel: " << channel_name 
+-		<< " not found in barlow Cache" << std::endl; 
++      std::cout << "Error: channel: " << channel_name
++		<< " not found in barlow Cache" << std::endl;
+       throw runtime_error("Channel not in barlow cache");
+     }
+ 
+@@ -480,69 +543,82 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
  
      // Loop over the bins in the cache
      // Set all gamma's to 0
@@ -2276,7 +2657,7 @@ index e2f9f70612..674cf7f4a4 100644
 +    //std::vector<BarlowCache>::iterator BCacheIter;
 +    //std::vector<BarlowCache>::iterator BCacheEnd = channel_cache.end();
 +    //std::vector<double> test(channel_cache.size());
-+    //time_before_setVal=clock();  
++    //time_before_setVal=clock();
 +    /*for( BCacheIter=channel_cache.begin(); BCacheIter != BCacheEnd; ++BCacheIter ) {
 +      BarlowCache& bin_cache = *BCacheIter;
        if( !bin_cache.hasStatUncert ) continue;
@@ -2308,7 +2689,7 @@ index e2f9f70612..674cf7f4a4 100644
 +        //nu_b_vec[i] = nu_b;
 +        if(nu_b == 0.0) bin_cache.onlyStatUncert=true;
 +      }
-+        
++
 +    //}
  
      // Loop over the bins in the cache
@@ -2331,24 +2712,27 @@ index e2f9f70612..674cf7f4a4 100644
 +      // for( unsigned int i = 0; i < channel_cache.size(); ++i ) {
 +      //BarlowCache& bin_cache = channel_cache[i];
 +      //if( !bin_cache.hasStatUncert ) continue;
- 
--      RooAbsPdf* sum_pdf = (RooAbsPdf*) bin_cache.sumPdf;
--      RooArgSet* obsSet = bin_cache.observables;
--      double binVolume = bin_cache.binVolume;
++
 +      RooAbsPdf* sum_pdf1 = (RooAbsPdf*) bin_cache.sumPdf1;
 +     // RooArgSet* obsSet = bin_cache.observables;
 +      //double binVolume = bin_cache.binVolume;
-       
--      bin_cache.SetBinCenter();
--      double nu_b_stat = sum_pdf->getVal(*obsSet)*sum_pdf->expectedEvents(*obsSet)*binVolume - nu_b_vec.at(i);
--      nu_b_stat_vec.at(i) = nu_b_stat;
--    }
++
 +      //bin_cache.SetBinCenter();
 +      double nu_b_stat = sum_pdf1->getVal(*obsSet)*sum_pdf1->expectedEvents(*obsSet)*binVolume - nu_b;
 +      //nu_b_stat_vec[i] = nu_b_stat;
 +    //}
-     //time_after_setVal=clock();  
-     
++    //time_after_setVal=clock();
+ 
+-      RooAbsPdf* sum_pdf = (RooAbsPdf*) bin_cache.sumPdf;
+-      RooArgSet* obsSet = bin_cache.observables;
+-      double binVolume = bin_cache.binVolume;
+-      
+-      bin_cache.SetBinCenter();
+-      double nu_b_stat = sum_pdf->getVal(*obsSet)*sum_pdf->expectedEvents(*obsSet)*binVolume - nu_b_vec.at(i);
+-      nu_b_stat_vec.at(i) = nu_b_stat;
+-    }
+-    //time_after_setVal=clock();  
+-    
      // Done with the first loops.
      // Now evaluating the function
  
@@ -2358,14 +2742,16 @@ index e2f9f70612..674cf7f4a4 100644
      // Loop over the bins in the cache
      //time_before_eval=clock();
 -    for( unsigned int i = 0; i < channel_cache.size(); ++i ) {
-+    //for( unsigned int i = 0; i < channel_cache.size(); ++i ) {
-       
+-      
 -      BarlowCache& bin_cache = channel_cache.at(i);
-+      //BarlowCache& bin_cache = channel_cache.at(i);
++    //for( unsigned int i = 0; i < channel_cache.size(); ++i ) {
  
 -      if( !bin_cache.hasStatUncert ) {
+-	//std::cout << "Bin: " << i << " of " << channel_cache.size() 
++      //BarlowCache& bin_cache = channel_cache.at(i);
++
 +      //if( !bin_cache.hasStatUncert ) {
- 	//std::cout << "Bin: " << i << " of " << channel_cache.size() 
++	//std::cout << "Bin: " << i << " of " << channel_cache.size()
  	//	  << " in channel: " << channel_name
  	//	  << " doesn't have stat uncertainties" << std::endl;
 -	continue;
@@ -2379,7 +2765,7 @@ index e2f9f70612..674cf7f4a4 100644
  
        // Get the cached objects
        RooRealVar* gamma = bin_cache.gamma;
-@@ -555,8 +632,8 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
+@@ -554,8 +630,8 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
  
        // Get the values necessary for
        // the analytic minimization
@@ -2390,20 +2776,74 @@ index e2f9f70612..674cf7f4a4 100644
  
        double tau_val = tau->getVal();
        double nData = bin_cache.nData;
-@@ -632,24 +709,28 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
+@@ -566,13 +642,13 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
+ 
+       // Check that the quadratic term is > 0
+       if(nu_b_stat > 0.00000001) {
+-	
++
+ 	double A = nu_b_stat*nu_b_stat + tau_val*nu_b_stat;
+ 	double B = nu_b*tau_val + nu_b*nu_b_stat - nData*nu_b_stat - m_val*nu_b_stat;
+ 	double C = -1*m_val*nu_b;
+-	
++
+ 	double discrim = B*B-4*A*C;
+-	
++
+ 	if( discrim < 0 ) {
+ 	  std::cout << "Warning: Discriminant (B*B - 4AC) < 0" << std::endl;
+ 	  std::cout << "Warning: Taking B*B - 4*A*C == 0" << std::endl;
+@@ -583,7 +659,7 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
+ 	  std::cout << "Warning: A <= 0" << std::endl;
+ 	  throw runtime_error("BarlowBeestonLL::evaluate() : A < 0");
+ 	}
+-	
++
+ 	gamma_hat_hat = ( -1*B + TMath::Sqrt(discrim) ) / (2*A);
+       }
+ 
+@@ -594,7 +670,7 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
+       }
+ 
+       // Check for NAN
+-      if( TMath::IsNaN(gamma_hat_hat) ) { 
++      if( TMath::IsNaN(gamma_hat_hat) ) {
+ 	std::cout << "ERROR: gamma hat hat is NAN" << std::endl;
+ 	throw runtime_error("BarlowBeestonLL::evaluate() : gamma hat hat is NAN");
+       }
+@@ -603,7 +679,7 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
+ 	std::cout << "WARNING: gamma hat hat <= 0.  Setting to 0" << std::endl;
+ 	gamma_hat_hat = 0;
+       }
+-      
++
+       /*
+       std::cout << "n: " << bin_cache.nData << " "
+ 		<< "nu_stat: " << nu_b_stat << " "
+@@ -613,7 +689,7 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
+ 		<< "A: " << A << " "
+ 		<< "B: " << B << " "
+ 		<< "C: " << C << " "
+-		<< "gamma hat hat: " << gamma_hat_hat 
++		<< "gamma hat hat: " << gamma_hat_hat
+ 		<< std::endl;
+       */
+ 
+@@ -631,32 +707,36 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
  	      << " SetVal: " << time_setVal
  	      << " Eval: " << time_eval
  	      << std::endl;
 -    */
+-  } 
 +    //8*/
-   } 
-+    
- 
++  }
++
++
 +  //std::cerr.precision(16);
 +  //std::cerr << _nll << std::endl;
  
+ 
 -  return _nll;  
-+  
 +  return _nll;
  
  }
@@ -2416,8 +2856,9 @@ index e2f9f70612..674cf7f4a4 100644
 -/// because the best fit has never been calculated, or because constant parameters have
 -/// changed value or parameters have changed const/float status, the minimum is recalculated
 -
+-void RooStats::HistFactory::RooBarlowBeestonLL::validateAbsMin() const 
 +//_____________________________________________________________________________
- void RooStats::HistFactory::RooBarlowBeestonLL::validateAbsMin() const 
++void RooStats::HistFactory::RooBarlowBeestonLL::validateAbsMin() const
  {
 +  // Check that parameters and likelihood value for 'best fit' are still valid. If not,
 +  // because the best fit has never been calculated, or because constant parameters have
@@ -2426,13 +2867,78 @@ index e2f9f70612..674cf7f4a4 100644
    // Check if constant status of any of the parameters have changed
    if (_absMinValid) {
      _piter->Reset() ;
-@@ -730,8 +811,7 @@ void RooStats::HistFactory::RooBarlowBeestonLL::validateAbsMin() const
+     RooAbsArg* par ;
+     while((par=(RooAbsArg*)_piter->Next())) {
+       if (_paramFixed[par->GetName()] != par->isConstant()) {
+-	cxcoutI(Minimization) << "RooStats::HistFactory::RooBarlowBeestonLL::evaluate(" << GetName() << ") constant status of parameter " << par->GetName() << " has changed from " 
+-				<< (_paramFixed[par->GetName()]?"fixed":"floating") << " to " << (par->isConstant()?"fixed":"floating") 
++	cxcoutI(Minimization) << "RooStats::HistFactory::RooBarlowBeestonLL::evaluate(" << GetName() << ") constant status of parameter " << par->GetName() << " has changed from "
++				<< (_paramFixed[par->GetName()]?"fixed":"floating") << " to " << (par->isConstant()?"fixed":"floating")
+ 				<< ", recalculating absolute minimum" << endl ;
+ 	_absMinValid = kFALSE ;
+ 	break ;
+@@ -674,7 +754,7 @@ void RooStats::HistFactory::RooBarlowBeestonLL::validateAbsMin() const
+     // Save current values of non-marginalized parameters
+     RooArgSet* obsStart = (RooArgSet*) _obs.snapshot(kFALSE) ;
+ 
+-    // Start from previous global minimum 
++    // Start from previous global minimum
+     if (_paramAbsMin.getSize()>0) {
+       const_cast<RooSetProxy&>(_par).assignValueOnly(_paramAbsMin) ;
+     }
+@@ -683,7 +763,7 @@ void RooStats::HistFactory::RooBarlowBeestonLL::validateAbsMin() const
+     }
+ 
+     // Find minimum with all observables floating
+-    const_cast<RooSetProxy&>(_obs).setAttribAll("Constant",kFALSE) ;  
++    const_cast<RooSetProxy&>(_obs).setAttribAll("Constant",kFALSE) ;
+     _minuit->migrad() ;
+ 
+     // Save value and remember
+@@ -706,7 +786,7 @@ void RooStats::HistFactory::RooBarlowBeestonLL::validateAbsMin() const
+     while((par=(RooAbsArg*)_piter->Next())) {
+       _paramFixed[par->GetName()] = par->isConstant() ;
+     }
+-    
++
+     if (dologI(Minimization)) {
+       cxcoutI(Minimization) << "RooStats::HistFactory::RooBarlowBeestonLL::evaluate(" << GetName() << ") minimum found at (" ;
+ 
+@@ -714,10 +794,10 @@ void RooStats::HistFactory::RooBarlowBeestonLL::validateAbsMin() const
+       Bool_t first=kTRUE ;
+       _oiter->Reset() ;
+       while ((arg=(RooAbsReal*)_oiter->Next())) {
+-	ccxcoutI(Minimization) << (first?"":", ") << arg->GetName() << "=" << arg->getVal() ;	
++	ccxcoutI(Minimization) << (first?"":", ") << arg->GetName() << "=" << arg->getVal() ;
+ 	first=kFALSE ;
+-      }      
+-      ccxcoutI(Minimization) << ")" << endl ;            
++      }
++      ccxcoutI(Minimization) << ")" << endl ;
+     }
+ 
+     // Restore original parameter values
+@@ -729,11 +809,10 @@ void RooStats::HistFactory::RooBarlowBeestonLL::validateAbsMin() const
  */
  
  
 -////////////////////////////////////////////////////////////////////////////////
 -
+-Bool_t RooStats::HistFactory::RooBarlowBeestonLL::redirectServersHook(const RooAbsCollection& /*newServerList*/, Bool_t /*mustReplaceAll*/, 
+-					 Bool_t /*nameChange*/, Bool_t /*isRecursive*/) 
+-{ 
 +//_____________________________________________________________________________
- Bool_t RooStats::HistFactory::RooBarlowBeestonLL::redirectServersHook(const RooAbsCollection& /*newServerList*/, Bool_t /*mustReplaceAll*/, 
- 					 Bool_t /*nameChange*/, Bool_t /*isRecursive*/) 
- { 
++Bool_t RooStats::HistFactory::RooBarlowBeestonLL::redirectServersHook(const RooAbsCollection& /*newServerList*/, Bool_t /*mustReplaceAll*/,
++					 Bool_t /*nameChange*/, Bool_t /*isRecursive*/)
++{
+   /*
+   if (_minuit) {
+     delete _minuit ;
+@@ -741,6 +820,4 @@ Bool_t RooStats::HistFactory::RooBarlowBeestonLL::redirectServersHook(const RooA
+   }
+   */
+   return kFALSE ;
+-} 
+-
+-
++}
