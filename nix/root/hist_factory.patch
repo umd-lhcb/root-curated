@@ -183,7 +183,7 @@ index 3fdf963839..cb7a6c0ade 100644
  
      proto->import(interp); // individual params have already been imported in first loop of this function
 diff --git a/roofit/histfactory/src/ParamHistFunc.cxx b/roofit/histfactory/src/ParamHistFunc.cxx
-index 66cf077d71..dfefcd034f 100644
+index 66cf077d71..b7717acc6c 100644
 --- a/roofit/histfactory/src/ParamHistFunc.cxx
 +++ b/roofit/histfactory/src/ParamHistFunc.cxx
 @@ -38,10 +38,13 @@
@@ -265,7 +265,7 @@ index 66cf077d71..dfefcd034f 100644
   
  }
  
-@@ -191,10 +195,18 @@ ParamHistFunc::ParamHistFunc(const ParamHistFunc& other, const char* name) :
+@@ -191,10 +195,16 @@ ParamHistFunc::ParamHistFunc(const ParamHistFunc& other, const char* name) :
    _paramSet("!paramSet", this, other._paramSet),
    _numBins( other._numBins ),
    _binMap( other._binMap ),
@@ -277,16 +277,14 @@ index 66cf077d71..dfefcd034f 100644
 -  _dataSet.removeSelfFromDir(); // files must not delete _dataSet.
 +  _paramSet.useHashMapForFind(true);
  
-+  RooFIter varIter = _dataVars.fwdIterator();
-+  RooAbsReal* comp;
-+  while((comp=(RooAbsReal*)varIter.next()))
-+  {
-+    addServer(*comp);
++  for (auto comp : _dataVars) {
++    auto var = static_cast<RooRealVar*>(comp);
++    addServer(*var);
 +  }
    // Copy constructor
    // Member _ownedList is intentionally not copy-constructed -- ownership is not transferred
  }
-@@ -231,6 +243,10 @@ Int_t ParamHistFunc::getCurrentBin() const {
+@@ -231,6 +241,10 @@ Int_t ParamHistFunc::getCurrentBin() const {
  /// internally in the '_paramSet' vector
  RooRealVar& ParamHistFunc::getParameter( Int_t index ) const {
    Int_t gammaIndex = -1;
@@ -297,7 +295,7 @@ index 66cf077d71..dfefcd034f 100644
    if( _binMap.find( index ) != _binMap.end() ) {
      gammaIndex = _binMap[ index ];
    }
-@@ -240,7 +256,9 @@ RooRealVar& ParamHistFunc::getParameter( Int_t index ) const {
+@@ -240,7 +254,9 @@ RooRealVar& ParamHistFunc::getParameter( Int_t index ) const {
      throw -1;
    }
  
@@ -308,7 +306,7 @@ index 66cf077d71..dfefcd034f 100644
  }
  
  
-@@ -265,6 +283,11 @@ void ParamHistFunc::setConstant( bool constant ) {
+@@ -265,6 +281,11 @@ void ParamHistFunc::setConstant( bool constant ) {
  }
  
  
@@ -320,7 +318,7 @@ index 66cf077d71..dfefcd034f 100644
  ////////////////////////////////////////////////////////////////////////////////
  
  void ParamHistFunc::setShape( TH1* shape ) {
-@@ -426,6 +449,7 @@ RooArgList ParamHistFunc::createParamSet(RooWorkspace& w, const std::string& Pre
+@@ -426,6 +447,7 @@ RooArgList ParamHistFunc::createParamSet(RooWorkspace& w, const std::string& Pre
      std::cout << " Error: ParamHistFunc doesn't support dimensions > 3D " <<  std::endl;
    }
  
@@ -328,7 +326,7 @@ index 66cf077d71..dfefcd034f 100644
    return paramSet;  
  
  }
-@@ -462,6 +486,7 @@ RooArgList ParamHistFunc::createParamSet(RooWorkspace& w, const std::string& Pre
+@@ -462,6 +484,7 @@ RooArgList ParamHistFunc::createParamSet(RooWorkspace& w, const std::string& Pre
      var->setMax( gamma_max );
    }
  
@@ -336,7 +334,7 @@ index 66cf077d71..dfefcd034f 100644
    return params;
  
  }
-@@ -516,6 +541,7 @@ RooArgList ParamHistFunc::createParamSet(const std::string& Prefix, Int_t numBin
+@@ -516,6 +539,7 @@ RooArgList ParamHistFunc::createParamSet(const std::string& Prefix, Int_t numBin
  
    }
  
@@ -344,7 +342,7 @@ index 66cf077d71..dfefcd034f 100644
    return paramSet;
  
  }
-@@ -545,6 +571,7 @@ Int_t ParamHistFunc::addVarSet( const RooArgList& vars ) {
+@@ -545,6 +569,7 @@ Int_t ParamHistFunc::addVarSet( const RooArgList& vars ) {
      }
  
      _dataVars.add( *comp );
@@ -352,7 +350,7 @@ index 66cf077d71..dfefcd034f 100644
      numVars++;
  
    }
-@@ -591,6 +618,7 @@ Int_t ParamHistFunc::addVarSet( const RooArgList& vars ) {
+@@ -591,6 +616,7 @@ Int_t ParamHistFunc::addVarSet( const RooArgList& vars ) {
  	Int_t TH1HistBin    = i + j*numBinsX + k*numBinsX*numBinsY; 
  	  
  	_binMap[RooDataSetBin] = TH1HistBin;
@@ -360,7 +358,7 @@ index 66cf077d71..dfefcd034f 100644
  	
        }
      }
-@@ -642,6 +670,7 @@ Int_t ParamHistFunc::addParamSet( const RooArgList& params ) {
+@@ -642,6 +668,7 @@ Int_t ParamHistFunc::addParamSet( const RooArgList& params ) {
      _paramSet.add( *comp );
  
    }
@@ -368,64 +366,24 @@ index 66cf077d71..dfefcd034f 100644
    
    return 0;
  
-@@ -751,30 +780,7 @@ Double_t ParamHistFunc::analyticalIntegralWN(Int_t /*code*/, const RooArgSet* /*
+@@ -751,6 +778,7 @@ Double_t ParamHistFunc::analyticalIntegralWN(Int_t /*code*/, const RooArgSet* /*
  std::list<Double_t>* ParamHistFunc::plotSamplingHint(RooAbsRealLValue& obs, Double_t xlo, 
  						Double_t xhi) const
  {
--  // copied and edited from RooHistFunc
--  RooAbsLValue* lvarg = &obs;
--
--  // Retrieve position of all bin boundaries
--  const RooAbsBinning* binning = lvarg->getBinningPtr(0) ;
--  Double_t* boundaries = binning->array() ;
--
--  std::list<Double_t>* hint = new std::list<Double_t> ;
--
--  // Widen range slighty
--  xlo = xlo - 0.01*(xhi-xlo) ;
--  xhi = xhi + 0.01*(xhi-xlo) ;
--
--  Double_t delta = (xhi-xlo)*1e-8 ;
-- 
--  // Construct array with pairs of points positioned epsilon to the left and
--  // right of the bin boundaries
--  for (Int_t i=0 ; i<binning->numBoundaries() ; i++) {
--    if (boundaries[i]>=xlo && boundaries[i]<=xhi) {
--      hint->push_back(boundaries[i]-delta) ;
--      hint->push_back(boundaries[i]+delta) ;
--    }
--  }
--  return hint ;
 +  return 0;
- }
+   // copied and edited from RooHistFunc
+   RooAbsLValue* lvarg = &obs;
  
- 
-@@ -786,22 +792,5 @@ std::list<Double_t>* ParamHistFunc::plotSamplingHint(RooAbsRealLValue& obs, Doub
+@@ -786,6 +814,7 @@ std::list<Double_t>* ParamHistFunc::plotSamplingHint(RooAbsRealLValue& obs, Doub
  std::list<Double_t>* ParamHistFunc::binBoundaries(RooAbsRealLValue& obs, Double_t xlo, 
  						  Double_t xhi) const 
  {
--  // copied and edited from RooHistFunc
--  RooAbsLValue* lvarg = &obs;
--
--  // Retrieve position of all bin boundaries
--  const RooAbsBinning* binning = lvarg->getBinningPtr(0) ;
--  Double_t* boundaries = binning->array() ;
--
--  std::list<Double_t>* hint = new std::list<Double_t> ;
--
--  // Construct array with pairs of points positioned epsilon to the left and
--  // right of the bin boundaries
--  for (Int_t i=0 ; i<binning->numBoundaries() ; i++) {
--    if (boundaries[i]>=xlo && boundaries[i]<=xhi) {
--      hint->push_back(boundaries[i]) ;
--    }
--  }
--
--  return hint ;
 +  return 0;
- }
+   // copied and edited from RooHistFunc
+   RooAbsLValue* lvarg = &obs;
+ 
 diff --git a/roofit/histfactory/src/PiecewiseInterpolation.cxx b/roofit/histfactory/src/PiecewiseInterpolation.cxx
-index f7e3cd4c12..b451a708b9 100644
+index f7e3cd4c12..c335255c06 100644
 --- a/roofit/histfactory/src/PiecewiseInterpolation.cxx
 +++ b/roofit/histfactory/src/PiecewiseInterpolation.cxx
 @@ -26,9 +26,12 @@
@@ -441,15 +399,7 @@ index f7e3cd4c12..b451a708b9 100644
  #include "RooRealVar.h"
  #include "RooMsgService.h"
  #include "RooNumIntConfig.h"
-@@ -52,7 +55,6 @@ PiecewiseInterpolation::PiecewiseInterpolation()
- }
- 
- 
--
- ////////////////////////////////////////////////////////////////////////////////
- /// Construct a new interpolation. The value of the function will be
- /// \f[
-@@ -70,7 +72,8 @@ PiecewiseInterpolation::PiecewiseInterpolation(const char* name, const char* tit
+@@ -70,7 +73,8 @@ PiecewiseInterpolation::PiecewiseInterpolation(const char* name, const char* tit
  					       const RooArgList& highSet,
  					       const RooArgList& paramSet,
  					       Bool_t takeOwnership) :
@@ -459,7 +409,7 @@ index f7e3cd4c12..b451a708b9 100644
    _nominal("!nominal","nominal value", this, (RooAbsReal&)nominal),
    _lowSet("!lowSet","low-side variation",this),
    _highSet("!highSet","high-side variation",this),
-@@ -78,6 +81,7 @@ PiecewiseInterpolation::PiecewiseInterpolation(const char* name, const char* tit
+@@ -78,6 +82,7 @@ PiecewiseInterpolation::PiecewiseInterpolation(const char* name, const char* tit
    _positiveDefinite(false)
  
  {
@@ -467,7 +417,7 @@ index f7e3cd4c12..b451a708b9 100644
    // KC: check both sizes
    if (lowSet.getSize() != highSet.getSize()) {
      coutE(InputArguments) << "PiecewiseInterpolation::ctor(" << GetName() << ") ERROR: input lists should be of equal length" << endl ;
-@@ -131,6 +135,7 @@ PiecewiseInterpolation::PiecewiseInterpolation(const char* name, const char* tit
+@@ -131,6 +136,7 @@ PiecewiseInterpolation::PiecewiseInterpolation(const char* name, const char* tit
    // Choose special integrator by default 
    specialIntegratorConfig(kTRUE)->method1D().setLabel("RooBinIntegrator") ;
    TRACE_CREATE
@@ -475,7 +425,7 @@ index f7e3cd4c12..b451a708b9 100644
  }
  
  
-@@ -139,7 +144,8 @@ PiecewiseInterpolation::PiecewiseInterpolation(const char* name, const char* tit
+@@ -139,7 +145,8 @@ PiecewiseInterpolation::PiecewiseInterpolation(const char* name, const char* tit
  /// Copy constructor
  
  PiecewiseInterpolation::PiecewiseInterpolation(const PiecewiseInterpolation& other, const char* name) :
@@ -485,18 +435,15 @@ index f7e3cd4c12..b451a708b9 100644
    _nominal("!nominal",this,other._nominal),
    _lowSet("!lowSet",this,other._lowSet),
    _highSet("!highSet",this,other._highSet),
-@@ -163,6 +169,206 @@ PiecewiseInterpolation::~PiecewiseInterpolation()
+@@ -163,6 +170,200 @@ PiecewiseInterpolation::~PiecewiseInterpolation()
  
  
  
 +RooArgSet* PiecewiseInterpolation::actualObservables(const RooArgSet &nset) const
 +{
 +  RooArgSet *myDeps = new RooArgSet;
-+  TIterator* diter = _depList.createIterator();
-+  diter->Reset();
-+  RooAbsArg* dep;
-+  while((dep=(RooAbsArg*)diter->Next()))
-+  {
++  for (auto comp : _depList) {
++    auto dep = static_cast<RooAbsArg*>(comp);
 +    myDeps->add(*dep);
 +  }
 +  return myDeps;
@@ -506,14 +453,11 @@ index f7e3cd4c12..b451a708b9 100644
 +RooArgSet* PiecewiseInterpolation::actualParameters(const RooArgSet &nset) const
 +{
 +  RooArgSet *myPars=new RooArgSet;
-+  TIterator* piter = _paramSet.createIterator();
-+  piter->Reset();
-+  RooAbsArg* par;
-+  while((par=(RooAbsArg*)piter->Next()))
-+  {
++  for (auto comp : _paramSet) {
++    auto par = static_cast<RooAbsArg*>(comp);
 +    myPars->add(*par);
 +  }
-+  myPars->remove(nset,kTRUE,kTRUE);
++  myPars->remove(nset, kTRUE, kTRUE);
 +  return myPars;
 +}
 +
@@ -692,135 +636,7 @@ index f7e3cd4c12..b451a708b9 100644
  
  ////////////////////////////////////////////////////////////////////////////////
  /// Calculate and return current value of self
-@@ -173,38 +379,53 @@ Double_t PiecewiseInterpolation::evaluate() const
-   Double_t nominal = _nominal;
-   Double_t sum(nominal) ;
- 
--  for (unsigned int i=0; i < _paramSet.size(); ++i) {
--    auto param = static_cast<RooAbsReal*>(_paramSet.at(i));
--    auto low   = static_cast<RooAbsReal*>(_lowSet.at(i));
--    auto high  = static_cast<RooAbsReal*>(_highSet.at(i));
-+  RooAbsReal* param ;
-+  RooAbsReal* high ;
-+  RooAbsReal* low ;
-+  int i=0;
-+
-+  RooFIter lowIter(_lowSet.fwdIterator()) ;
-+  RooFIter highIter(_highSet.fwdIterator()) ;
-+  RooFIter paramIter(_paramSet.fwdIterator()) ;
-+
-+  while((param=(RooAbsReal*)paramIter.next())) {
-+    low = (RooAbsReal*)lowIter.next() ;
-+    high = (RooAbsReal*)highIter.next() ;
-+    Double_t highVal=high->getVal();
-+    Double_t lowVal=low->getVal();
-+    if ((lowVal==nominal))
-+    {
-+      if(highVal==nominal) continue;
-+    }
-+
-     Int_t icode = _interpCode[i] ;
- 
-     switch(icode) {
-     case 0: {
-       // piece-wise linear
-       if(param->getVal()>0)
--	sum +=  param->getVal()*(high->getVal() - nominal );
-+	sum +=  param->getVal()*(highVal - nominal );
-       else
--	sum += param->getVal()*(nominal - low->getVal());
-+	sum += param->getVal()*(nominal - lowVal);
-       break ;
-     }
-     case 1: {
-       // pice-wise log
-       if(param->getVal()>=0)
--	sum *= pow(high->getVal()/nominal, +param->getVal());
-+	sum *= pow(highVal/nominal, +param->getVal());
-       else
--	sum *= pow(low->getVal()/nominal,  -param->getVal());
-+	sum *= pow(lowVal/nominal,  -param->getVal());
-       break ;
-     }
-     case 2: {
-       // parabolic with linear
--      double a = 0.5*(high->getVal()+low->getVal())-nominal;
--      double b = 0.5*(high->getVal()-low->getVal());
-+      double a = 0.5*(highVal+lowVal)-nominal;
-+      double b = 0.5*(highVal-lowVal);
-       double c = 0;
-       if(param->getVal()>1 ){
--	sum += (2*a+b)*(param->getVal()-1)+high->getVal()-nominal;
-+	sum += (2*a+b)*(param->getVal()-1)+highVal-nominal;
-       } else if(param->getVal()<-1 ) {
--	sum += -1*(2*a-b)*(param->getVal()+1)+low->getVal()-nominal;
-+	sum += -1*(2*a-b)*(param->getVal()+1)+lowVal-nominal;
-       } else {
- 	sum +=  a*pow(param->getVal(),2) + b*param->getVal()+c;
-       }
-@@ -212,13 +433,13 @@ Double_t PiecewiseInterpolation::evaluate() const
-     }
-     case 3: {
-       //parabolic version of log-normal
--      double a = 0.5*(high->getVal()+low->getVal())-nominal;
--      double b = 0.5*(high->getVal()-low->getVal());
-+      double a = 0.5*(highVal+lowVal)-nominal;
-+      double b = 0.5*(highVal-lowVal);
-       double c = 0;
-       if(param->getVal()>1 ){
--	sum += (2*a+b)*(param->getVal()-1)+high->getVal()-nominal;
-+	sum += (2*a+b)*(param->getVal()-1)+highVal-nominal;
-       } else if(param->getVal()<-1 ) {
--	sum += -1*(2*a-b)*(param->getVal()+1)+low->getVal()-nominal;
-+	sum += -1*(2*a-b)*(param->getVal()+1)+lowVal-nominal;
-       } else {
- 	sum +=  a*pow(param->getVal(),2) + b*param->getVal()+c;
-       }
-@@ -233,12 +454,12 @@ Double_t PiecewiseInterpolation::evaluate() const
- 
-       double x  = param->getVal();      
-       if (x>1) {
--	sum += x*(high->getVal() - nominal );
-+	sum += x*(highVal - nominal );
-       } else if (x<-1) {
--	sum += x*(nominal - low->getVal());
-+	sum += x*(nominal - lowVal);
-       } else {
--	double eps_plus = high->getVal() - nominal;
--	double eps_minus = nominal - low->getVal();
-+	double eps_plus = highVal - nominal;
-+	double eps_minus = nominal - lowVal;
- 	double S = 0.5 * (eps_plus + eps_minus);
- 	double A = 0.0625 * (eps_plus - eps_minus);
- 	
-@@ -262,14 +483,14 @@ Double_t PiecewiseInterpolation::evaluate() const
-       if (x > x0 || x < -x0)
-       {
- 	if(x>0)
--	  sum += x*(high->getVal() - nominal );
-+	  sum += x*(highVal - nominal );
- 	else
--	  sum += x*(nominal - low->getVal());
-+	  sum += x*(nominal - lowVal);
-       }
-       else if (nominal != 0)
-       {
--	double eps_plus = high->getVal() - nominal;
--	double eps_minus = nominal - low->getVal();
-+	double eps_plus = highVal - nominal;
-+	double eps_minus = nominal - lowVal;
- 	double S = (eps_plus + eps_minus)/2;
- 	double A = (eps_plus - eps_minus)/2;
- 
-@@ -294,6 +515,7 @@ Double_t PiecewiseInterpolation::evaluate() const
-       break ;
-     }
-     }
-+    ++i;
-   }
-   
-   if(_positiveDefinite && (sum<0)){
-@@ -424,6 +646,7 @@ Int_t PiecewiseInterpolation::getAnalyticalIntegralWN(RooArgSet& allVars, RooArg
+@@ -424,6 +625,7 @@ Int_t PiecewiseInterpolation::getAnalyticalIntegralWN(RooArgSet& allVars, RooArg
  /// Implement analytical integrations by doing appropriate weighting from  component integrals
  /// functions to integrators of components
  
@@ -828,7 +644,7 @@ index f7e3cd4c12..b451a708b9 100644
  Double_t PiecewiseInterpolation::analyticalIntegralWN(Int_t code, const RooArgSet* /*normSet2*/,const char* /*rangeName*/) const 
  {
    /*
-@@ -603,6 +826,7 @@ Double_t PiecewiseInterpolation::analyticalIntegralWN(Int_t code, const RooArgSe
+@@ -603,6 +805,7 @@ Double_t PiecewiseInterpolation::analyticalIntegralWN(Int_t code, const RooArgSe
    //  cout << "value = " << value <<endl;
    return value;
  }
