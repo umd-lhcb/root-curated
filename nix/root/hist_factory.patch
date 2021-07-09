@@ -665,7 +665,7 @@ index f7e3cd4c12..d79a83e34c 100644
  
  ////////////////////////////////////////////////////////////////////////////////
 diff --git a/roofit/histfactory/src/RooBarlowBeestonLL.cxx b/roofit/histfactory/src/RooBarlowBeestonLL.cxx
-index 2a45d30741..ce475356a9 100644
+index 2a45d30741..fefb706749 100644
 --- a/roofit/histfactory/src/RooBarlowBeestonLL.cxx
 +++ b/roofit/histfactory/src/RooBarlowBeestonLL.cxx
 @@ -31,7 +31,11 @@
@@ -752,18 +752,25 @@ index 2a45d30741..ce475356a9 100644
  
        // And set the data value for this bin
        if( ChannelBinDataMap.find(channel_name) == ChannelBinDataMap.end() ) {
-@@ -366,9 +396,7 @@ bool RooStats::HistFactory::RooBarlowBeestonLL::getParameters(const RooArgSet* d
+@@ -361,16 +391,10 @@ bool RooStats::HistFactory::RooBarlowBeestonLL::getParameters(const RooArgSet* d
+                                                               bool stripDisconnected) const {
+   bool errorInBaseCall = RooAbsArg::getParameters( depList, outputSet, stripDisconnected );
+ 
+-  for (auto const& arg : outputSet) {
+-
      // If there is a gamma in the name,
      // strip it from the list of dependencies
  
 -    if( _statUncertParams.find(arg->GetName()) != _statUncertParams.end() ) {
 -      outputSet.remove( *arg, true );
 -    }
-+    outputSet.remove( *outputSet.selectByName("*gamma_stat*"), kTRUE, kTRUE );
+-
+-  }
++  outputSet.remove( *outputSet.selectByName("*gamma_stat*"), kTRUE, kTRUE );
  
-   }
+   return errorInBaseCall || false;
  
-@@ -480,47 +508,26 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
+@@ -480,47 +504,26 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
  
      // Loop over the bins in the cache
      // Set all gamma's to 0
@@ -819,7 +826,7 @@ index 2a45d30741..ce475356a9 100644
      //time_after_setVal=clock();  
      
      // Done with the first loops.
-@@ -530,19 +537,8 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
+@@ -530,19 +533,8 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
  
      // Loop over the bins in the cache
      //time_before_eval=clock();
@@ -839,7 +846,7 @@ index 2a45d30741..ce475356a9 100644
  
        // Get the cached objects
        RooRealVar* gamma = bin_cache.gamma;
-@@ -554,8 +550,6 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
+@@ -554,8 +546,6 @@ Double_t RooStats::HistFactory::RooBarlowBeestonLL::evaluate() const
  
        // Get the values necessary for
        // the analytic minimization
