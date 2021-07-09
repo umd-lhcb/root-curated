@@ -1,19 +1,13 @@
 final: prev:
 
 {
+  # ROOT 6.24 stack
   root = prev.callPackage ./root {
     python = final.python3;
     inherit (prev.darwin.apple_sdk.frameworks) Cocoa CoreSymbolication OpenGL;
     noSplash = true;
   };
-
-  # ROOT 6.24 stack
-  root_6_24_02 = final.root.overrideAttrs (oldAttrs: rec {
-    patches = oldAttrs.patches ++ [
-      ./root/hist_factory.patch
-      ./root/hist_factory_branch_optimization.patch
-    ];
-  });
+  root_6_24_02 = final.root;
 
   # ROOT 6.16 stack
   root_6_16_00 = prev.callPackage ./root_6_16 {

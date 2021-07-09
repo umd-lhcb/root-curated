@@ -383,7 +383,7 @@ index 66cf077d71..b7717acc6c 100644
    RooAbsLValue* lvarg = &obs;
  
 diff --git a/roofit/histfactory/src/PiecewiseInterpolation.cxx b/roofit/histfactory/src/PiecewiseInterpolation.cxx
-index f7e3cd4c12..c335255c06 100644
+index f7e3cd4c12..d79a83e34c 100644
 --- a/roofit/histfactory/src/PiecewiseInterpolation.cxx
 +++ b/roofit/histfactory/src/PiecewiseInterpolation.cxx
 @@ -26,9 +26,12 @@
@@ -435,7 +435,7 @@ index f7e3cd4c12..c335255c06 100644
    _nominal("!nominal",this,other._nominal),
    _lowSet("!lowSet",this,other._lowSet),
    _highSet("!highSet",this,other._highSet),
-@@ -163,6 +170,200 @@ PiecewiseInterpolation::~PiecewiseInterpolation()
+@@ -163,6 +170,212 @@ PiecewiseInterpolation::~PiecewiseInterpolation()
  
  
  
@@ -485,22 +485,23 @@ index f7e3cd4c12..c335255c06 100644
 +    RooAbsReal* param ;
 +    RooHistFunc* high ;
 +    RooHistFunc* low ;
-+    int i=0;
++    int i=-1;
 +
 +    RooFIter lowIter(_lowSet.fwdIterator()) ;
 +    RooFIter highIter(_highSet.fwdIterator()) ;
 +    RooFIter paramIter(_paramSet.fwdIterator()) ;
 +
 +    while((param=(RooAbsReal*)paramIter.next())) {
++      ++i;
 +      low = (RooHistFunc*)(lowIter.next()) ;
 +      high = (RooHistFunc*)(highIter.next()) ;
 +      low->dataHist().get(k);
 +      high->dataHist().get(k);
 +      Double_t highVal=high->dataHist().weight();
 +      Double_t lowVal=low->dataHist().weight();
-+      if ((lowVal==nominal))
++      if ((lowVal==nominal)*(highVal==nominal))
 +      {
-+        if(highVal==nominal) continue;
++        continue;
 +      }
 +
 +      Int_t icode = _interpCode[i] ;
@@ -527,6 +528,17 @@ index f7e3cd4c12..c335255c06 100644
 +        double a = 0.5*(highVal+lowVal)-nominal;
 +        double b = 0.5*(highVal-lowVal);
 +        double c = 0;
++        double x = param->getVal();
++        if(x*x <= 1)
++        {
++          sum += a*x*x+b+x;
++        }
++        else
++        {
++          int sgn = 1-2*std::signbit(x);
++          sum += (b+2*sgn*a)*x-a;
++        }
++        /* can I do this with no branch?
 +        if(param->getVal()>1 ){
 +    sum += (2*a+b)*(param->getVal()-1)+highVal-nominal;
 +        } else if(param->getVal()<-1 ) {
@@ -534,6 +546,7 @@ index f7e3cd4c12..c335255c06 100644
 +        } else {
 +    sum +=  a*pow(param->getVal(),2) + b*param->getVal()+c;
 +        }
++        */
 +        break ;
 +      }
 +      case 3: {
@@ -616,7 +629,6 @@ index f7e3cd4c12..c335255c06 100644
 +        break ;
 +      }
 +      }
-+      ++i;
 +    }
 +
 +    if(_positiveDefinite && (sum<0)){
@@ -636,7 +648,7 @@ index f7e3cd4c12..c335255c06 100644
  
  ////////////////////////////////////////////////////////////////////////////////
  /// Calculate and return current value of self
-@@ -424,6 +625,7 @@ Int_t PiecewiseInterpolation::getAnalyticalIntegralWN(RooArgSet& allVars, RooArg
+@@ -424,6 +637,7 @@ Int_t PiecewiseInterpolation::getAnalyticalIntegralWN(RooArgSet& allVars, RooArg
  /// Implement analytical integrations by doing appropriate weighting from  component integrals
  /// functions to integrators of components
  
@@ -644,7 +656,7 @@ index f7e3cd4c12..c335255c06 100644
  Double_t PiecewiseInterpolation::analyticalIntegralWN(Int_t code, const RooArgSet* /*normSet2*/,const char* /*rangeName*/) const 
  {
    /*
-@@ -603,6 +805,7 @@ Double_t PiecewiseInterpolation::analyticalIntegralWN(Int_t code, const RooArgSe
+@@ -603,6 +817,7 @@ Double_t PiecewiseInterpolation::analyticalIntegralWN(Int_t code, const RooArgSe
    //  cout << "value = " << value <<endl;
    return value;
  }
