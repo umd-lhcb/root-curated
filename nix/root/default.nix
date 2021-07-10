@@ -138,6 +138,8 @@ stdenv.mkDerivation rec {
   ++ (if automaticSIMD then [ "-Dvdt=ON" ] else [ "-Dvdt=OFF" ])
   ;
 
+  NIX_CFLAGS_COMPILE = "-O2 -march=native -mtune=native";
+
   postInstall = ''
     for prog in rootbrowse rootcp rooteventselector rootls rootmkdir rootmv rootprint rootrm rootslimtree; do
       wrapProgram "$out/bin/$prog" \
