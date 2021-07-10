@@ -32,11 +32,13 @@
 , libpng
 , nlohmann_json
 , tbb
+, vdt
 , Cocoa
 , CoreSymbolication
 , OpenGL
 , noSplash ? false
 , implicitMT ? false
+, automaticSIMD ? false
 }:
 
 stdenv.mkDerivation rec {
@@ -53,6 +55,7 @@ stdenv.mkDerivation rec {
     ++ lib.optionals (!stdenv.isDarwin) [ libX11 libXpm libXft libXext libGLU libGL expat ]
     ++ lib.optionals (stdenv.isDarwin) [ Cocoa CoreSymbolication OpenGL ]
     ++ lib.optionals (implicitMT) [ tbb ]
+    ++ lib.optionals (automaticSIMD) [ vdt ]
   ;
 
   patches = [
@@ -117,7 +120,6 @@ stdenv.mkDerivation rec {
     "-Droot7=OFF"
     "-Dsqlite=OFF"
     "-Dssl=OFF"
-    "-Dvdt=OFF"
     "-Dwebgui=OFF"
     "-Dxml=ON"
     "-Dxrootd=OFF"
@@ -132,8 +134,8 @@ stdenv.mkDerivation rec {
     "-Druntime_cxxmodules=OFF"
 
   ]
-  ++ lib.optional (implicitMT) "-Dimt=ON"
-  ++ lib.optional (!implicitMT) "-Dimt=OFF"
+  ++ (if implicitMT then [ "-Dimt=ON" ] else [ "-Dimt=OFF" ])
+  ++ (if automaticSIMD then [ "-Dvdt=ON" ] else [ "-Dvdt=OFF" ])
   ;
 
   postInstall = ''

@@ -1,11 +1,15 @@
 final: prev:
 
 {
+  # Optional dependencies for ROOT
+  vdt = prev.callPackage ./vdt { };
+
   # ROOT 6.24 stack
   root = prev.callPackage ./root {
     python = final.python3;
     inherit (prev.darwin.apple_sdk.frameworks) Cocoa CoreSymbolication OpenGL;
     noSplash = true;
+    automaticSIMD = true;
   };
   root_6_24_02 = final.root;
 
