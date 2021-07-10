@@ -9,7 +9,6 @@ final: prev:
     python = final.python3;
     inherit (prev.darwin.apple_sdk.frameworks) Cocoa CoreSymbolication OpenGL;
     noSplash = true;
-    automaticSIMD = true;
   };
   root_6_24_02 = final.root;
 
