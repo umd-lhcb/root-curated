@@ -26,6 +26,7 @@
           root_6_16_00 = pkgs.root_6_16_00;
           root_5_34_38 = pkgs.root_5_34_38;
           clang-format-all = pkgs.clang-format-all;
+          sw_vers = pkgs.sw_vers;
         };
         devShell = pkgs.mkShell {
           name = "root-curated";

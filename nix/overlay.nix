@@ -34,4 +34,9 @@ final: prev:
 
   # General utilities
   clang-format-all = prev.callPackage ./clang-format-all { };
+  # We fake a macOS version so that root-config won't put garbage in various
+  # compiler flags
+  sw_vers = prev.writeScriptBin "sw_vers" ''
+    echo "ProductVersion: 10.12.3"
+  '';
 }
