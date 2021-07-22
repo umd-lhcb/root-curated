@@ -29,6 +29,7 @@
 
           hammer-phys = pkgs.hammer-phys;
           hammer-phys-w_root_6_24 = pkgs.hammer-phys-w_root_6_24;
+          hammer-phys-w_root_6_16 = pkgs.hammer-phys-w_root_6_16;
 
           clang-format-all = pkgs.clang-format-all;
           sw_vers = pkgs.sw_vers;

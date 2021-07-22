@@ -22,6 +22,10 @@ final: prev:
     noSplash = true;
   };
 
+  hammer-phys-w_root_6_16 = prev.callPackage ./hammer-phys {
+    root = final.root_6_16_00;
+  };
+
   # Older ROOTs
   # ROOT 6.12 doesn't support Python 3 and doesn't build on Big Sur :-(
   # root_6_12_06 = prev.callPackage ./root_6_12 {
