@@ -1,0 +1,37 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 6e46fa16..dc9f70c9 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -213,19 +213,6 @@ if(WITH_PYTHON)
+ 			include(FindCython)
+ 		endif()
+ 	endif()
+-	if(WITH_PYTHON)
+-		#check for cymove
+-		find_cython_module(cymove)
+-		if(NOT Python3_cymove_FOUND)
+-			if(Python3_pip_FOUND)
+-				install_python_module(cymove "1.0.0")
+-			endif()
+-			if(NOT Python3_cymove_INSTALLED)
+-				message (WARNING "cymove not found/installed. Hammer will only be accessible as a C++ library.")
+-				set(WITH_PYTHON OFF CACHE BOOL "" FORCE)
+-			endif()
+-		endif()
+-	endif()
+ 	if(WITH_PYTHON)
+ 		#check for numpy
+ 		if(CMAKE_VERSION VERSION_LESS "3.12.0")
+diff --git a/pyext/wrapper/hammerlib.pyx b/pyext/wrapper/hammerlib.pyx
+index e31737ad..f6567697 100644
+--- a/pyext/wrapper/hammerlib.pyx
++++ b/pyext/wrapper/hammerlib.pyx
+@@ -49,7 +49,7 @@ from libcpp.set cimport set as cset
+ from cython.operator import dereference as deref, preincrement as inc
+ from cpython cimport bool
+ 
+-from cymove cimport cymove as move
++from libcpp.utility cimport move
+ from cpython.version cimport PY_MAJOR_VERSION
+ 
+ import cmath

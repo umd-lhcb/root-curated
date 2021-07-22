@@ -27,13 +27,13 @@ stdenv.mkDerivation rec {
     python.pkgs.matplotlib
   ];
 
-  patches = [ ./add_missing_header.patch ];
+  patches = [ ./add_missing_header.patch ./cymove_to_cython.patch ];
 
   cmakeFlags = [
     "-DCMAKE_INSTALL_LIBDIR=lib"
     "-DCMAKE_INSTALL_INCLUDEDIR=include"
     "-DBUILD_SHARED_LIBS=ON"
-    "-DWITH_PYTHON=OFF"
+    "-DWITH_PYTHON=ON"
     "-DWITH_ROOT=ON"
     "-DINSTALL_EXTERNAL_DEPENDENCIES=OFF"
   ];
