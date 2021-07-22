@@ -1,7 +1,7 @@
 final: prev:
 
 {
-  # Optional dependencies for ROOT
+  # Dependencies
   vdt = prev.callPackage ./vdt { };
 
   # ROOT 6.24 stack
@@ -11,6 +11,9 @@ final: prev:
     noSplash = true;
   };
   root_6_24_02 = final.root;
+
+  hammer-phys = prev.callPackage ./hammer-phys { };
+  hammer-phys-w_root_6_24 = final.hammer-phys;
 
   # ROOT 6.16 stack
   root_6_16_00 = prev.callPackage ./root_6_16 {

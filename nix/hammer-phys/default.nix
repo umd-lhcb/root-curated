@@ -1,9 +1,10 @@
 { stdenv
 , cmake
+, pkgconfig
 , boost
 , libyamlcpp
 , root
-, python
+, python3
 , fetchFromGitLab
 }:
 
@@ -18,13 +19,19 @@ stdenv.mkDerivation rec {
     sha256 = "0ldf7h6capzbwigzqdklm9wrglrli5byhsla8x79vnq7v63xx332";
   };
 
-  nativeBuildInputs = [ cmake python.pkgs.cython ];
+  nativeBuildInputs = [
+    cmake
+    pkgconfig
+    python3.pkgs.setuptools
+    python3.pkgs.cython
+  ];
+
   buildInputs = [
     boost
     libyamlcpp
     root
-    python.pkgs.numpy
-    python.pkgs.matplotlib
+    python3.pkgs.numpy
+    python3.pkgs.matplotlib
   ];
 
   patches = [ ./add_missing_header.patch ./cymove_to_cython.patch ];
