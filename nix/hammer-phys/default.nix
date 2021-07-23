@@ -7,7 +7,7 @@
 , root
 , python3
 , fetchFromGitLab
-, enablePython ? true
+, enablePython ? false  # Python support requires a LD_LIBRARY_PATH export
 }:
 
 stdenv.mkDerivation rec {
@@ -44,11 +44,12 @@ stdenv.mkDerivation rec {
   ++ (if enablePython then [ "-DWITH_PYTHON=ON" ] else [ "-DWITH_PYTHON=OFF" ])
   ;
 
-  # Symbolic link the .so files to the lib folder so the output looks like this:
-  #   lib/*.so -> lib/Hammer/*.so
-  # instead of just:
+  # Move the .so files to the lib folder so the output looks like this:
+  #   lib/*.so
+  # instead of:
   #   lib/Hammer/*.so
   postFixup = ''
-    ln -s $out/lib/Hammer/* $out/lib
+    mv $out/lib/Hammer/* $out/lib
+    rm -rf $out/lib/Hammer
   '';
 }
