@@ -1,4 +1,5 @@
 { stdenv
+, lib
 , cmake
 , pkgconfig
 , boost
@@ -6,6 +7,7 @@
 , root
 , python3
 , fetchFromGitLab
+, enablePython ? true
 }:
 
 stdenv.mkDerivation rec {
@@ -19,20 +21,15 @@ stdenv.mkDerivation rec {
     sha256 = "0ldf7h6capzbwigzqdklm9wrglrli5byhsla8x79vnq7v63xx332";
   };
 
-  nativeBuildInputs = [
-    cmake
-    pkgconfig
-    python3.pkgs.setuptools
-    python3.pkgs.cython
-  ];
+  nativeBuildInputs = [ cmake pkgconfig ]
+    ++ lib.optionals (enablePython) (with python3.pkgs; [ setuptools cython ])
+  ;
 
-  buildInputs = [
-    boost
-    libyamlcpp
-    root
-    python3.pkgs.numpy
-    python3.pkgs.matplotlib
-  ];
+  buildInputs = [ root ]
+    ++ lib.optionals (enablePython) (with python3.pkgs; [ numpy matplotlib ])
+  ;
+
+  propagatedBuildInputs = [ boost libyamlcpp ];
 
   patches = [ ./add_missing_header.patch ./cymove_to_cython.patch ];
 
@@ -43,14 +40,15 @@ stdenv.mkDerivation rec {
     "-DWITH_PYTHON=ON"
     "-DWITH_ROOT=ON"
     "-DINSTALL_EXTERNAL_DEPENDENCIES=OFF"
-  ];
+  ]
+  ++ (if enablePython then [ "-DWITH_PYTHON=ON" ] else [ "-DWITH_PYTHON=OFF" ])
+  ;
 
   # Move the .so files to the lib folder so the output looks like this:
   #   lib/*.so
   # instead of:
   #   lib/Hammer/*.so
   postFixup = ''
-    mv $out/lib/Hammer/* $out/lib
-    rm -rf $out/lib/Hammer
+    ln -s $out/lib/Hammer/* $out/lib
   '';
 }
