@@ -264,14 +264,3 @@ The branching strategy is:
 - `histfactory_patch`: Latest development branch
 - `histfactory_patch_vX-YY-ZZ`: Historical ROOT versions that work with
   Phoebe's patch
-
-
-### Compiling ROOT without `nix` on macOS
-
-0. Remove existing ROOT installation: `rm -rf root_build root_install`
-1. `git clone --branch histfactory_patch https://github.com/umd-lhcb/root.git`
-2. `mkdir root_build root_install && cd root_build`
-3. `cmake -DCMAKE_INSTALL_PREFIX=../root_install/ -Dsqlite=OFF -Dmysql=OFF -Dx11=ON  -Droofit=ON -Dmt=ON -Dminuit2=ON -Dccache=ON -Dlibcxx=ON -Drpath=ON ../root `
-4. `cmake --build . -- install -j8`
-
-    Note:  For `-jN`, `N` should equal to your number of CPU cores.
