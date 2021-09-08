@@ -44,8 +44,8 @@ final: prev:
   # We fake a macOS version so that root-config won't put garbage in various
   # compiler flags
   sw_vers = prev.writeScriptBin "sw_vers" ''
-    echo "ProductName: macOS"
-    echo "ProductVersion: 10.12.3"
-    echo "BuildVersion: 16D32"
+    echo "ProductName:	macOS"
+    echo "ProductVersion:	10.12.3"
+    echo "BuildVersion:	16D32"
   '';
 }
