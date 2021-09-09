@@ -52,6 +52,7 @@ stdenv.mkDerivation rec {
   patches = [
     ./sw_vers.patch
     ./hist_factory.patch
+    ./fix_root_config.patch
   ];
 
   preConfigure = ''
