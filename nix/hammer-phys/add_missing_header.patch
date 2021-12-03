@@ -10,16 +10,3 @@ index 91a720be..df51b494 100644
  
  namespace Hammer {
  
-diff --git a/include/Hammer/Math/Utils.hh b/include/Hammer/Math/Utils.hh
-index bc3cb11f..023f2473 100644
---- a/include/Hammer/Math/Utils.hh
-+++ b/include/Hammer/Math/Utils.hh
-@@ -14,6 +14,8 @@
- 
- #include <complex>
- #include <limits>
-+#include <cstring>
-+#include <climits>
- 
- namespace Hammer {
- 

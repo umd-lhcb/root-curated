@@ -12,13 +12,13 @@
 
 stdenv.mkDerivation rec {
   pname = "hammer-phys";
-  version = "1.1.0";
+  version = "1.2.0";
 
   src = fetchFromGitLab {
     owner = "mpapucci";
     repo = "Hammer";
     rev = "v${version}";
-    sha256 = "0ldf7h6capzbwigzqdklm9wrglrli5byhsla8x79vnq7v63xx332";
+    sha256 = "Pze1ncnzjfmlUDVP3QPV6/l/CU0PdyDL1dGB3rWYUN4=";
   };
 
   nativeBuildInputs = [ cmake pkgconfig ]
