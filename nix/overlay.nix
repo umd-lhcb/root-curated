@@ -14,8 +14,8 @@ final: prev:
 
   # ROOT 6.24 stack
   root_6_24_02 = final.root;
-  hammer-phys-w_root_6_24 = final.hammer-phys {
-    root = final.root_6_24_02
+  hammer-phys-w_root_6_24 = prev.callPackage ./hammer-phys {
+    root = final.root_6_24_02;
   };
 
   # ROOT 6.16 stack
