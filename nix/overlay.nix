@@ -4,16 +4,19 @@ final: prev:
   # Dependencies
   vdt = prev.callPackage ./vdt { };
 
-  # ROOT 6.24 stack
+  # Latest root
   root = prev.callPackage ./root {
     python = final.python3;
     inherit (prev.darwin.apple_sdk.frameworks) Cocoa CoreSymbolication OpenGL;
     noSplash = true;
   };
-  root_6_24_02 = final.root;
-
   hammer-phys = prev.callPackage ./hammer-phys { };
-  hammer-phys-w_root_6_24 = final.hammer-phys;
+
+  # ROOT 6.24 stack
+  root_6_24_02 = final.root;
+  hammer-phys-w_root_6_24 = final.hammer-phys {
+    root = final.root_6_24_02
+  };
 
   # ROOT 6.16 stack
   root_6_16_00 = prev.callPackage ./root_6_16 {
@@ -21,7 +24,6 @@ final: prev:
     inherit (prev.darwin.apple_sdk.frameworks) Cocoa CoreSymbolication OpenGL;
     noSplash = true;
   };
-
   hammer-phys-w_root_6_16 = prev.callPackage ./hammer-phys {
     root = final.root_6_16_00;
   };
@@ -43,9 +45,9 @@ final: prev:
   clang-format-all = prev.callPackage ./clang-format-all { };
   # We fake a macOS version so that root-config won't put garbage in various
   # compiler flags
-  sw_vers = prev.writeScriptBin "sw_vers" ''
-    echo "ProductName:	macOS"
-    echo "ProductVersion:	10.12.3"
-    echo "BuildVersion:	16D32"
-  '';
+  #sw_vers = prev.writeScriptBin "sw_vers" ''
+  #  echo "ProductName:	macOS"
+  #  echo "ProductVersion:	10.12.3"
+  #  echo "BuildVersion:	16D32"
+  #'';
 }
