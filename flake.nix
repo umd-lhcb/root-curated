@@ -32,7 +32,6 @@
             hammer-phys
             hammer-phys-w_root_6_24
             hammer-phys-w_root_6_16
-            hammer-phys-w_root_6_16
             hammer-phys-w_root_6_12
             # else
             clang-format-all
