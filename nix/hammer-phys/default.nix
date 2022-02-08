@@ -12,13 +12,13 @@
 
 stdenv.mkDerivation rec {
   pname = "hammer-phys";
-  version = "1.2.0";
+  version = "1.2.1";
 
   src = fetchFromGitLab {
     owner = "mpapucci";
     repo = "Hammer";
     rev = "v${version}";
-    sha256 = "Pze1ncnzjfmlUDVP3QPV6/l/CU0PdyDL1dGB3rWYUN4=";
+    sha256 = "ljDHJ802HpJYUBqUs/Bka/vZvF/5QyPvsIdtso8Gy54=";
   };
 
   nativeBuildInputs = [ cmake pkgconfig ]
@@ -31,7 +31,7 @@ stdenv.mkDerivation rec {
 
   propagatedBuildInputs = [ boost libyamlcpp ];
 
-  patches = [ ./add_missing_header.patch ./cymove_to_cython.patch ];
+  patches = [ ./cymove_to_cython.patch ];
 
   cmakeFlags = [
     "-DCMAKE_INSTALL_LIBDIR=lib"
