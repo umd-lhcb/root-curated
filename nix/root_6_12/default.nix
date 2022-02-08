@@ -73,7 +73,6 @@ stdenv.mkDerivation rec {
 
   cmakeFlags = [
     "-Drpath=ON"
-    "-DCMAKE_CXX_STANDARD=14"
     "-DCMAKE_INSTALL_LIBDIR=lib"
     "-DCMAKE_INSTALL_INCLUDEDIR=include"
     "-Dbuiltin_afterimage=OFF"
@@ -136,7 +135,7 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     homepage = "https://root.cern.ch/";
     description = "A data analysis framework";
-    platforms = platforms.unix;
+    platforms = platforms.linux;  # disable macOS support
     maintainers = [ maintainers.veprbl ];
     license = licenses.lgpl21;
   };
