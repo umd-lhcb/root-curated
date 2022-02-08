@@ -22,8 +22,19 @@
           dev-shell = devShell.inputDerivation;
 
           inherit (pkgs) vdt
-            root root_6_24_02 root_6_16_00 root_5_34_38
-            hammer-phys hammer-phys-w_root_6_24 hammer-phys-w_root_6_16
+            # root
+            root
+            root_6_24_02
+            root_6_16_00
+            root_6_12_06
+            root_5_34_38
+            # hammer
+            hammer-phys
+            hammer-phys-w_root_6_24
+            hammer-phys-w_root_6_16
+            hammer-phys-w_root_6_16
+            hammer-phys-w_root_6_12
+            # else
             clang-format-all
             ;
         };
