@@ -35,6 +35,9 @@
             hammer-phys-w_root_6_12
             # roounfold
             roounfold
+            roounfold-w_root_6_24
+            roounfold-w_root_6_16
+            roounfold-w_root_6_12
             # else
             clang-format-all
             ;

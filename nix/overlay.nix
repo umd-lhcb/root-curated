@@ -18,6 +18,9 @@ final: prev:
   hammer-phys-w_root_6_24 = prev.callPackage ./hammer-phys {
     root = final.root_6_24_02;
   };
+  roounfold-w_root_6_24 = prev.callPackage ./roounfold_1_1 {
+    root = final.root_6_24_02;
+  };
 
   # ROOT 6.16 stack
   root_6_16_00 = prev.callPackage ./root_6_16 {
@@ -26,6 +29,9 @@ final: prev:
     noSplash = true;
   };
   hammer-phys-w_root_6_16 = prev.callPackage ./hammer-phys {
+    root = final.root_6_16_00;
+  };
+  roounfold-w_root_6_16 = prev.callPackage ./roounfold_1_1 {
     root = final.root_6_16_00;
   };
 
@@ -37,6 +43,9 @@ final: prev:
     noSplash = true;
   };
   hammer-phys-w_root_6_12 = prev.callPackage ./hammer-phys {
+    root = final.root_6_12_06;
+  };
+  roounfold-w_root_6_12 = prev.callPackage ./roounfold_1_1 {
     root = final.root_6_12_06;
   };
 
