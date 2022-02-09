@@ -1,0 +1,36 @@
+diff --git a/src/RooUnfold.cxx b/src/RooUnfold.cxx
+index 5432278..a3f2aee 100644
+--- a/src/RooUnfold.cxx
++++ b/src/RooUnfold.cxx
+@@ -80,6 +80,7 @@ END_HTML */
+ #include "TDecompSVD.h"
+ #include "TDecompChol.h"
+ #include "TRandom.h"
++#include "TBuffer.h"
+ 
+ #include "RooUnfoldResponse.h"
+ #include "RooUnfoldErrors.h"
+diff --git a/src/RooUnfoldResponse.cxx b/src/RooUnfoldResponse.cxx
+index 4459f90..b453fbe 100644
+--- a/src/RooUnfoldResponse.cxx
++++ b/src/RooUnfoldResponse.cxx
+@@ -33,6 +33,7 @@ END_HTML */
+ #include "TH3.h"
+ #include "TVectorD.h"
+ #include "TMatrixD.h"
++#include "TBuffer.h"
+ 
+ using std::cout;
+ using std::cerr;
+diff --git a/src/RooUnfoldSvd.cxx b/src/RooUnfoldSvd.cxx
+index f1b9696..ab5f0c4 100644
+--- a/src/RooUnfoldSvd.cxx
++++ b/src/RooUnfoldSvd.cxx
+@@ -34,6 +34,7 @@ END_HTML */
+ #include "TH2.h"
+ #include "TVectorD.h"
+ #include "TMatrixD.h"
++#include "TBuffer.h"
+ #if defined(HAVE_TSVDUNFOLD) || ROOT_VERSION_CODE < ROOT_VERSION(5,28,0)
+ #include "TSVDUnfold_local.h"  /* Use local copy of TSVDUnfold.h */
+ #else

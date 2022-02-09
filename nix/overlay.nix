@@ -11,6 +11,7 @@ final: prev:
     noSplash = true;
   };
   hammer-phys = prev.callPackage ./hammer-phys { };
+  roounfold = prev.callPackage ./roounfold_1_1 { };
 
   # ROOT 6.24 stack
   root_6_24_02 = final.root;

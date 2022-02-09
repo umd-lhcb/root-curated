@@ -1,0 +1,35 @@
+diff --git a/GNUmakefile b/GNUmakefile
+index b50c07b..24e38d7 100644
+--- a/GNUmakefile
++++ b/GNUmakefile
+@@ -104,11 +104,7 @@ DEPDIR        = $(WORKDIR)dep/
+ 
+ # Only provide RooUnfoldTUnfold if TUnfold is available.
+ # TUnfold is included in ROOT 5.22 and later.
+-ifeq ($(HAVE_TUNFOLD),)
+-ifneq ($(wildcard $(ROOTINCDIR)/TUnfold.h),)
+-HAVE_TUNFOLD  = 1
+-endif
+-endif
++HAVE_TUNFOLD  = 0
+ 
+ ifneq ($(HAVE_TUNFOLD),1)
+ CPPFLAGS     += -DNOTUNFOLD
+@@ -323,7 +319,7 @@ $(STATICLIBFILE) : $(LIBFILE)
+ 	$(_)ln -s $(patsubst $(dir $@)%,%,$<) $@
+ 
+ # Rule to combine objects into a shared library
+-$(SHLIBFILE) : $(OLIST) $(CINTOBJ)
++$(SHLIBFILE) : $(OLIST)
+ 	@echo "Making $@"
+ 	@mkdir -p $(SHLIBDIR)
+ 	@rm -f $@
+@@ -337,7 +333,7 @@ $(MAINEXE) : $(EXEDIR)%$(ExeSuf) : $(OBJDIR)%.o $(LINKLIB)
+ # Useful build targets
+ include: $(DLIST)
+ lib: $(LIBFILE)
+-shlib: $(SHLIBFILE) $(ROOTMAP)
++shlib: $(SHLIBFILE)
+ bin: shlib $(MAINEXE)
+ 
+ commands :
