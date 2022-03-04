@@ -20,4 +20,14 @@ stdenv.mkDerivation rec {
 
   nativeBuildInputs = [ pkgconfig cmake ];
   buildInputs = [ root ];
+
+  buildPhase = "make";
+
+  installPhase = ''
+    mkdir -p $out/lib
+    cp libRooUnfold* $out/lib
+
+    mkdir -p $out/include
+    cp $src/src/*.h $out/include
+  '';
 }
