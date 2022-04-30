@@ -225,15 +225,7 @@ nix flake lock --update-input stuff
 
 ## Upgrade `nix`
 
-On macOS, with sudo:
-```shell
-sudo -i sh -c 'nix-channel --update && nix-env -iA nixpkgs.nixUnstable && launchctl remove org.nixos.nix-daemon && launchctl load /Library/LaunchDaemons/org.nixos.nix-daemon.plist'
-```
-
-On Linux, with sudo:
-```shell
-sudo nix-channel --update; nix-env -iA nixpkgs.nixUnstable nixpkgs.cacert; systemctl daemon-reload; systemctl restart nix-daemon
-```
+Take a look at [the official instruction](https://nixos.org/manual/nix/stable/installation/upgrading.html)
 
 
 ## Miscellaneous
