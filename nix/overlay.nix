@@ -3,7 +3,7 @@ final: prev:
 {
   # Dependencies
   vdt = prev.callPackage ./vdt { };
-  boost = boost17x;  # set default boost to 1.7x
+  boost = prev.boost17x;  # set default boost to 1.7x
 
   # Latest root
   root = prev.callPackage ./root {
