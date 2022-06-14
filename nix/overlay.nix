@@ -4,6 +4,26 @@ final: prev:
   # Dependencies
   vdt = prev.callPackage ./vdt { };
   boost = prev.boost17x;  # set default boost to 1.7x
+  python3 = prev.python3.override {
+    packageOverrides = python-final: python-prev: {
+      cython = python-final.callPackage ./python-packages/Cython { };
+      numpy = python-final.callPackage ./python-packages/numpy { };
+      awkward = python-final.callPackage ./python-packages/awkward { };
+      boost-histogram = python-final.callPackage ./python-packages/boost-histogram {
+        inherit (final) boost;
+      };
+      pyyaml = python-final.callPackage ./python-packages/pyyaml { };
+      scikit-hep-testdata = python-final.callPackage ./python-packages/scikit-hep-testdata { };
+      scipy = python-final.callPackage ./python-packages/scipy { };
+      statsmodels = python-packages.callPackage ./python-packages/statsmodels { };
+      uncertainties = python-packages.callPackage ./python-packages/uncertainties { };
+      uproot = python-packages.callPackage ./python-packages/uproot { };
+      matplotlib = python-packages.callPackage ./python-packages/matplotlib {
+        stdenv = if final.stdenv.isDarwin then final.clangStdenv else final.stdenv;
+        inherit (final.darwin.apple_sdk.frameworks) Cocoa;
+      };
+    };
+  };
 
   # Latest root
   root = prev.callPackage ./root {
