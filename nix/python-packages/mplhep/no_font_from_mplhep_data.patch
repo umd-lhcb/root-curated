@@ -1,0 +1,33 @@
+diff a/setup.cfg b/setup.cfg
+--- a/setup.cfg
++++ b/setup.cfg
+@@ -26,7 +26,6 @@ classifiers =
+ packages = find:
+ install_requires =
+ 	matplotlib>=3.4
+-	mplhep-data
+ 	numpy>=1.16.0
+ 	packaging
+ 	uhi>=0.2.0
+diff a/src/mplhep/__init__.py b/src/mplhep/__init__.py
+--- a/src/mplhep/__init__.py
++++ b/src/mplhep/__init__.py
+@@ -3,7 +3,6 @@ from __future__ import annotations
+ import os
+ 
+ import matplotlib.font_manager as fm
+-import mplhep_data
+ 
+ # Get styles directly, also available within experiment helpers.
+ # Get helper functions
+@@ -43,10 +42,6 @@ rcParams = Config(
+ )
+ 
+ path = os.path.abspath(__file__)
+-font_path = os.path.join(os.path.dirname(mplhep_data.__file__), "fonts")
+-font_files = fm.findSystemFonts(fontpaths=font_path)
+-for font in font_files:
+-    fm.fontManager.addfont(font)
+ 
+ 
+ # Log submodules

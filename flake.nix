@@ -30,6 +30,8 @@
             boost-histogram
             xgboost
             scikit-learn
+            mplhep
+            uhi
           ]);
 
           inherit (pkgs) vdt

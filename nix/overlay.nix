@@ -16,9 +16,6 @@ final: prev:
       inherit (final) boost;
     };
     pyyaml = finalPy.callPackage ./python-packages/pyyaml { };
-    # matplotlib = finalPy.callPackage ./python-packages/matplotlib { };
-    # scipy = finalPy.callPackage ./python-packages/scipy { };
-    # statsmodels = finalPy.callPackage ./python-packages/statsmodels { };
     uncertainties = finalPy.callPackage ./python-packages/uncertainties { };
     uproot = finalPy.callPackage ./python-packages/uproot { };
     pandas = finalPy.callPackage ./python-packages/pandas { };
@@ -29,6 +26,11 @@ final: prev:
     scikit-learn = finalPy.callPackage ./python-packages/scikit-learn {
       inherit (prev) gfortran glibcLocales;
     };
+    mplhep = finalPy.callPackage ./python-packages/mplhep { };
+    uhi = finalPy.callPackage ./python-packages/uhi { };
+    # matplotlib = finalPy.callPackage ./python-packages/matplotlib { };
+    # scipy = finalPy.callPackage ./python-packages/scipy { };
+    # statsmodels = finalPy.callPackage ./python-packages/statsmodels { };
     # packaging = finalPy.callPackage ./python-packages/packaging { };
   };
   python3 = prev.python3.override { packageOverrides = final.pythonOverrides; };
