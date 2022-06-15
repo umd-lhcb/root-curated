@@ -7,6 +7,7 @@
 , xxhash
 , zstandard
 , pytestCheckHook
+, setuptools
 }:
 
 buildPythonPackage rec {
@@ -27,6 +28,7 @@ buildPythonPackage rec {
     lz4
     xxhash
     zstandard
+    setuptools
   ];
 
   doCheck = false;

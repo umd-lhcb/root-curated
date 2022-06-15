@@ -7,6 +7,7 @@
 , pytestCheckHook
 , pyyaml
 , rapidjson
+, setuptools
 }:
 
 buildPythonPackage rec {
@@ -20,7 +21,7 @@ buildPythonPackage rec {
 
   nativeBuildInputs = [ cmake ];
   buildInputs = [ pyyaml rapidjson ];
-  propagatedBuildInputs = [ numpy ];
+  propagatedBuildInputs = [ numpy setuptools ];
 
   dontUseCmakeConfigure = true;
 
