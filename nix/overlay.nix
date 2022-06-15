@@ -13,11 +13,14 @@ final: prev:
         inherit (final) boost;
       };
       pyyaml = python-final.callPackage ./python-packages/pyyaml { };
+      # matplotlib = python-final.callPackage ./python-packages/matplotlib { };
       # scipy = python-final.callPackage ./python-packages/scipy { };
-      statsmodels = python-final.callPackage ./python-packages/statsmodels { };
+      # statsmodels = python-final.callPackage ./python-packages/statsmodels { };
       uncertainties = python-final.callPackage ./python-packages/uncertainties { };
       uproot = python-final.callPackage ./python-packages/uproot { };
       pandas = python-final.callPackage ./python-packages/pandas { };
+      patsy = python-final.callPackage ./python-packages/patsy { };
+      # packaging = python-final.callPackage ./python-packages/packaging { };
     };
   };
 
