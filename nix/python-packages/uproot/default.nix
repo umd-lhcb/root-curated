@@ -7,7 +7,6 @@
 , xxhash
 , zstandard
 , pytestCheckHook
-, scikit-hep-testdata
 }:
 
 buildPythonPackage rec {
@@ -19,7 +18,7 @@ buildPythonPackage rec {
     owner = "scikit-hep";
     repo = "uproot4";
     rev = version;
-    sha256 = "sha256-0000000000000000000000000000000000000000000=";
+    sha256 = "sha256-TznlxeNr199/E8AtuVjwaqAA5kX5xvp35fdK6bFQw/M=";
   };
 
   propagatedBuildInputs = [
@@ -30,27 +29,27 @@ buildPythonPackage rec {
     zstandard
   ];
 
-  checkInputs = [
-    pytestCheckHook
-    scikit-hep-testdata
-  ];
-  preCheck = ''
-    export HOME="$(mktemp -d)"
-  '';
-  disabledTests = [
-    # tests that try to download files
-    "test_http"
-    "test_no_multipart"
-    "test_fallback"
-    "test_pickle_roundtrip_http"
-  ];
-  disabledTestPaths = [
-    # tests that try to download files
-    "tests/test_0066-fix-http-fallback-freeze.py"
-    "tests/test_0088-read-with-http.py"
-    "tests/test_0220-contiguous-byte-ranges-in-http.py"
-  ];
-  pythonImportsCheck = [ "uproot" ];
+  doCheck = false;
+  # checkInputs = [
+  #   pytestCheckHook
+  # ];
+  # preCheck = ''
+  #   export HOME="$(mktemp -d)"
+  # '';
+  # disabledTests = [
+  #   # tests that try to download files
+  #   "test_http"
+  #   "test_no_multipart"
+  #   "test_fallback"
+  #   "test_pickle_roundtrip_http"
+  # ];
+  # disabledTestPaths = [
+  #   # tests that try to download files
+  #   "tests/test_0066-fix-http-fallback-freeze.py"
+  #   "tests/test_0088-read-with-http.py"
+  #   "tests/test_0220-contiguous-byte-ranges-in-http.py"
+  # ];
+  # pythonImportsCheck = [ "uproot" ];
 
   meta = with lib; {
     homepage = "https://github.com/scikit-hep/uproot4";
