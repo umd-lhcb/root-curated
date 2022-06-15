@@ -29,6 +29,7 @@
             uncertainties
             boost-histogram
             xgboost
+            scikit-learn
           ]);
 
           inherit (pkgs) vdt

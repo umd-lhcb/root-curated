@@ -23,6 +23,9 @@ final: prev:
       xgboost = python-final.callPackage ./python-packages/xgboost {
         inherit (final) xgboost;
       };
+      scikit-learn = python-final.callPackage ./python-packages/scikit-learn {
+        inherit (prev) gfortran glibcLocales;
+      };
       # packaging = python-final.callPackage ./python-packages/packaging { };
     };
   };
