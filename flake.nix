@@ -20,6 +20,15 @@
       rec {
         packages = flake-utils.lib.flattenTree {
           dev-shell = devShell.inputDerivation;
+          pythonDev = pkgs.python3.withPackages (p: with p; [
+            numpy
+            matplotlib
+            uproot
+            pyyaml
+            statsmodels
+            uncertainties
+            boost-histogram
+          ]);
 
           inherit (pkgs) vdt
             # root

@@ -13,15 +13,10 @@ final: prev:
         inherit (final) boost;
       };
       pyyaml = python-final.callPackage ./python-packages/pyyaml { };
-      scikit-hep-testdata = python-final.callPackage ./python-packages/scikit-hep-testdata { };
-      scipy = python-final.callPackage ./python-packages/scipy { };
-      statsmodels = python-packages.callPackage ./python-packages/statsmodels { };
-      uncertainties = python-packages.callPackage ./python-packages/uncertainties { };
-      uproot = python-packages.callPackage ./python-packages/uproot { };
-      matplotlib = python-packages.callPackage ./python-packages/matplotlib {
-        stdenv = if final.stdenv.isDarwin then final.clangStdenv else final.stdenv;
-        inherit (final.darwin.apple_sdk.frameworks) Cocoa;
-      };
+      # scipy = python-final.callPackage ./python-packages/scipy { };
+      statsmodels = python-final.callPackage ./python-packages/statsmodels { };
+      uncertainties = python-final.callPackage ./python-packages/uncertainties { };
+      uproot = python-final.callPackage ./python-packages/uproot { };
     };
   };
 
