@@ -17,6 +17,7 @@ final: prev:
       statsmodels = python-final.callPackage ./python-packages/statsmodels { };
       uncertainties = python-final.callPackage ./python-packages/uncertainties { };
       uproot = python-final.callPackage ./python-packages/uproot { };
+      pandas = python-final.callPackage ./python-packages/pandas { };
     };
   };
 
