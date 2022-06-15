@@ -28,6 +28,7 @@
             statsmodels
             uncertainties
             boost-histogram
+            xgboost
           ]);
 
           inherit (pkgs) vdt

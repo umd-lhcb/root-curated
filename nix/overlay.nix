@@ -20,9 +20,13 @@ final: prev:
       uproot = python-final.callPackage ./python-packages/uproot { };
       pandas = python-final.callPackage ./python-packages/pandas { };
       patsy = python-final.callPackage ./python-packages/patsy { };
+      xgboost = python-final.callPackage ./python-packages/xgboost {
+        inherit (final) xgboost;
+      };
       # packaging = python-final.callPackage ./python-packages/packaging { };
     };
   };
+  xgboost = prev.callPackage ./xgboost { };
 
   # Latest root
   root = prev.callPackage ./root {
