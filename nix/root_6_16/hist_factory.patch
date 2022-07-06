@@ -41,10 +41,10 @@ index e186121a4d..044be7a1b7 100644
  
    // std::vector< Double_t > _nominalVals; // The nominal vals when gamma = 1.0 ( = 1.0 by default)
 diff --git a/roofit/histfactory/inc/RooStats/HistFactory/PiecewiseInterpolation.h b/roofit/histfactory/inc/RooStats/HistFactory/PiecewiseInterpolation.h
-index 27bc8cf613..f72c24ff48 100644
+index 27bc8cf613..aacc86b00b 100644
 --- a/roofit/histfactory/inc/RooStats/HistFactory/PiecewiseInterpolation.h
 +++ b/roofit/histfactory/inc/RooStats/HistFactory/PiecewiseInterpolation.h
-@@ -17,6 +17,7 @@
+@@ -17,15 +17,17 @@
  #define ROO_PIECEWISEINTERPOLATION
  
  #include "RooAbsReal.h"
@@ -52,7 +52,9 @@ index 27bc8cf613..f72c24ff48 100644
  #include "RooRealProxy.h"
  #include "RooListProxy.h"
  
-@@ -25,7 +26,7 @@
+ #include "RooObjCacheManager.h"
++#include <vector>
+ 
  class RooRealVar;
  class RooArgList ;
  
@@ -61,7 +63,13 @@ index 27bc8cf613..f72c24ff48 100644
  public:
  
    PiecewiseInterpolation() ;
-@@ -47,7 +48,7 @@ public:
+@@ -42,12 +44,13 @@ public:
+   const RooArgList& lowList() const { return _lowSet ; }
+   const RooArgList& highList() const { return _highSet ; }
+   const RooArgList& paramList() const { return _paramSet ; }
++  const std::vector<int>&  interpolationCodes() const { return _interpCode; }
+ 
+   //virtual Bool_t forceAnalyticalInt(const RooAbsArg&) const { return kTRUE ; }
    Bool_t setBinIntegrator(RooArgSet& allVars) ;
  
    Int_t getAnalyticalIntegralWN(RooArgSet& allVars, RooArgSet& analVars, const RooArgSet* normSet,const char* rangeName=0) const ;
@@ -70,7 +78,7 @@ index 27bc8cf613..f72c24ff48 100644
  
    void setPositiveDefinite(bool flag=true){_positiveDefinite=flag;}
  
-@@ -58,6 +59,7 @@ public:
+@@ -58,6 +61,7 @@ public:
    virtual std::list<Double_t>* binBoundaries(RooAbsRealLValue& /*obs*/, Double_t /*xlo*/, Double_t /*xhi*/) const ;
    virtual std::list<Double_t>* plotSamplingHint(RooAbsRealLValue& obs, Double_t xlo, Double_t xhi) const ; 
    virtual Bool_t isBinnedDistribution(const RooArgSet& obs) const ;
@@ -78,7 +86,7 @@ index 27bc8cf613..f72c24ff48 100644
  
  protected:
  
-@@ -76,8 +78,12 @@ protected:
+@@ -76,8 +80,12 @@ protected:
      RooArgList _highIntList ;
      // will want std::vector<RooRealVar*> for low and high also
    } ;
