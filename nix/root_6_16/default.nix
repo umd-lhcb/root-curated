@@ -53,6 +53,7 @@ stdenv.mkDerivation rec {
     ./sw_vers.patch
     ./hist_factory.patch
     ./fix_root_config.patch
+    ./fix_histo_same_binning.patch
   ];
 
   preConfigure = ''
