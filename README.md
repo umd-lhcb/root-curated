@@ -16,9 +16,9 @@ a version of ROOT 6 w/ HistFactory patches (from Phoebe) applied.
 
 2. Edit `/etc/nix/nix.conf` with sudo permission and add the following lines:
 
-    ```
+    ```shell
     experimental-features = nix-command flakes
-    sandbox = false
+    #sandbox = false  # uncomment if you are on macOS!
     ```
 
 3. Reboot your mac. Check that `nix flake` returns something.
