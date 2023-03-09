@@ -3,7 +3,7 @@ final: prev:
 {
   # Dependencies
   vdt = prev.callPackage ./vdt { };
-  boost = prev.boost17x;  # set default boost to 1.7x
+  boost = prev.boost17x; # set default boost to 1.7x
 
   # Python stuff
   # Make the Python overrides composable. Idea stolen from:
@@ -91,4 +91,12 @@ final: prev:
 
   # General utilities
   clang-format-all = prev.callPackage ./clang-format-all { };
+
+  # Haskell overrides
+  haskellPackages = prev.haskellPackages.override {
+    overrides = _: p:
+      {
+        time-compat = prev.haskell.lib.dontCheck p.time-compat;
+      };
+  };
 }
