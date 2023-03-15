@@ -169,7 +169,7 @@ index cb126c3a21..3162197929 100644
    RooBarlowBeestonLL* bbnll = new RooBarlowBeestonLL("bbnll", "bbnll", *nll); //, *observables);
    bbnll->setPdf( this );
 diff --git a/roofit/histfactory/src/HistoToWorkspaceFactoryFast.cxx b/roofit/histfactory/src/HistoToWorkspaceFactoryFast.cxx
-index 3fdf963839..cb7a6c0ade 100644
+index 3fdf963839..dbd136fb7f 100644
 --- a/roofit/histfactory/src/HistoToWorkspaceFactoryFast.cxx
 +++ b/roofit/histfactory/src/HistoToWorkspaceFactoryFast.cxx
 @@ -368,6 +368,7 @@ namespace HistFactory{
@@ -189,6 +189,15 @@ index 3fdf963839..cb7a6c0ade 100644
      interp.forceNumInt();
  
      proto->import(interp); // individual params have already been imported in first loop of this function
+@@ -794,7 +793,7 @@ namespace HistFactory{
+     tot.specialIntegratorConfig(kTRUE)->method1D().setLabel("RooBinIntegrator")  ;
+     tot.specialIntegratorConfig(kTRUE)->method2D().setLabel("RooBinIntegrator")  ;
+     tot.specialIntegratorConfig(kTRUE)->methodND().setLabel("RooBinIntegrator")  ;
+-    tot.forceNumInt();
++    // tot.forceNumInt();
+ 
+     // for mixed generation in RooSimultaneous
+     tot.setAttribute("GenerateBinned"); // for use with RooSimultaneous::generate in mixed mode
 diff --git a/roofit/histfactory/src/ParamHistFunc.cxx b/roofit/histfactory/src/ParamHistFunc.cxx
 index 66cf077d71..b7717acc6c 100644
 --- a/roofit/histfactory/src/ParamHistFunc.cxx
