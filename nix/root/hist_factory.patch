@@ -399,7 +399,7 @@ index 66cf077d71..b7717acc6c 100644
    RooAbsLValue* lvarg = &obs;
  
 diff --git a/roofit/histfactory/src/PiecewiseInterpolation.cxx b/roofit/histfactory/src/PiecewiseInterpolation.cxx
-index f7e3cd4c12..3279f73ecd 100644
+index f7e3cd4c12..6329930d1d 100644
 --- a/roofit/histfactory/src/PiecewiseInterpolation.cxx
 +++ b/roofit/histfactory/src/PiecewiseInterpolation.cxx
 @@ -26,9 +26,12 @@
@@ -547,7 +547,7 @@ index f7e3cd4c12..3279f73ecd 100644
 +        double x = param->getVal();
 +        if(x*x <= 1)
 +        {
-+          sum += a*x*x+b+x;
++          sum += a*x*x+b*x;
 +        }
 +        else
 +        {
