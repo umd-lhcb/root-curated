@@ -399,7 +399,7 @@ index 66cf077d71..b7717acc6c 100644
    RooAbsLValue* lvarg = &obs;
  
 diff --git a/roofit/histfactory/src/PiecewiseInterpolation.cxx b/roofit/histfactory/src/PiecewiseInterpolation.cxx
-index f7e3cd4c12..6329930d1d 100644
+index f7e3cd4c12..8f695a1265 100644
 --- a/roofit/histfactory/src/PiecewiseInterpolation.cxx
 +++ b/roofit/histfactory/src/PiecewiseInterpolation.cxx
 @@ -26,9 +26,12 @@
@@ -437,7 +437,7 @@ index f7e3cd4c12..6329930d1d 100644
    // Choose special integrator by default 
    specialIntegratorConfig(kTRUE)->method1D().setLabel("RooBinIntegrator") ;
    TRACE_CREATE
-+  this->Print("V");
++  // this->Print("V");
  }
  
  
