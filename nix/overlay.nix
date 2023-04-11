@@ -43,6 +43,7 @@ final: prev:
     noSplash = true;
   };
   hammer-phys = prev.callPackage ./hammer-phys { };
+  hammer-phys-dev = prev.callPackage ./hammer-phys-dev { };
   roounfold = prev.callPackage ./roounfold { };
   roounfold_1_1 = prev.callPackage ./roounfold_1_1 { };
 

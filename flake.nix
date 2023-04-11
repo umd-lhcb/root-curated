@@ -46,6 +46,8 @@
             hammer-phys-w_root_6_24
             hammer-phys-w_root_6_16
             hammer-phys-w_root_6_12
+            # hammer dev
+            hammer-phys-dev
             # roounfold
             roounfold
             roounfold-w_root_6_24
