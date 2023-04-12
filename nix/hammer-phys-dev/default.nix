@@ -31,7 +31,10 @@ stdenv.mkDerivation rec {
 
   propagatedBuildInputs = [ boost libyamlcpp ];
 
-  patches = [ ./cymove_to_cython.patch ];
+  patches = [
+    ./cymove_to_cython.patch
+    ./missing_symb.patch
+  ];
 
   cmakeFlags = [
     "-DCMAKE_INSTALL_LIBDIR=lib"
