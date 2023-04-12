@@ -1,0 +1,12 @@
+diff --git a/src/Tools/Pdg.cc b/src/Tools/Pdg.cc
+index 5ccaddc6..7b0e77d1 100644
+--- a/src/Tools/Pdg.cc
++++ b/src/Tools/Pdg.cc
+@@ -932,6 +932,7 @@ namespace Hammer {
+     const PdgId PID::RHOMINUS;
+     const PdgId PID::K0L;
+     const PdgId PID::K0S;
++    const PdgId PID::K0;
+     const PdgId PID::KPLUS;
+     const PdgId PID::KMINUS;
+     const PdgId PID::ETA;
