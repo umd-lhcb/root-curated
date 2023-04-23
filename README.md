@@ -3,6 +3,40 @@ A curated software root (foundation) for most of our analysis repos, including
 a version of ROOT 6 w/ HistFactory patches (from Phoebe) applied.
 
 
+## Install `nix` on macOS (ARM-based)
+
+1. Go to [the official page](https://nixos.org/download.html),
+    follow the _Multi-user installation_ guide.
+
+    Or, just paste this to your terminal:
+
+    ```
+    sh <(curl -L https://nixos.org/nix/install) --daemon
+    ```
+
+2. Install `Rosetta 2` by pasting this to your terminal:
+
+    ```shell
+    sudo softwareupdate --install-rosetta --agree-to-license
+    ```
+
+2. Edit `/etc/nix/nix.conf` with sudo permission and add the following lines:
+
+    ```shell
+    experimental-features = nix-command flakes
+    #sandbox = false  # uncomment if you are on macOS!
+    system = x86_64-darwin
+    extra-platforms = x86_64-darwin aarch64-darwin
+    ```
+
+3. Reboot your mac. Check that `nix flake` returns something.
+4. Clone this project. In project root, run:
+
+    ```
+    nix develop
+    ```
+
+
 ## Install `nix` on macOS
 
 1. Go to [the official page](https://nixos.org/download.html),
