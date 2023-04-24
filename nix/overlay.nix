@@ -9,17 +9,17 @@ final: prev:
   # Make the Python overrides composable. Idea stolen from:
   #   https://github.com/NixOS/nixpkgs/issues/44426#issuecomment-629635102
   pythonOverrides = finalPy: prevPy: {
-    cython = finalPy.callPackage ./python-packages/Cython { };
-    numpy = finalPy.callPackage ./python-packages/numpy { };
-    awkward = finalPy.callPackage ./python-packages/awkward { };
-    boost-histogram = finalPy.callPackage ./python-packages/boost-histogram {
-      inherit (final) boost;
-    };
-    pyyaml = finalPy.callPackage ./python-packages/pyyaml { };
-    uncertainties = finalPy.callPackage ./python-packages/uncertainties { };
-    uproot = finalPy.callPackage ./python-packages/uproot { };
-    pandas = finalPy.callPackage ./python-packages/pandas { };
-    patsy = finalPy.callPackage ./python-packages/patsy { };
+    # cython = finalPy.callPackage ./python-packages/Cython { };
+    # numpy = finalPy.callPackage ./python-packages/numpy { };
+    # awkward = finalPy.callPackage ./python-packages/awkward { };
+    # boost-histogram = finalPy.callPackage ./python-packages/boost-histogram {
+    #   inherit (final) boost;
+    # };
+    # pyyaml = finalPy.callPackage ./python-packages/pyyaml { };
+    # uncertainties = finalPy.callPackage ./python-packages/uncertainties { };
+    # uproot = finalPy.callPackage ./python-packages/uproot { };
+    # pandas = finalPy.callPackage ./python-packages/pandas { };
+    # patsy = finalPy.callPackage ./python-packages/patsy { };
     xgboost = finalPy.callPackage ./python-packages/xgboost {
       inherit (final) xgboost;
     };
@@ -27,11 +27,7 @@ final: prev:
       inherit (prev) gfortran glibcLocales;
     };
     mplhep = finalPy.callPackage ./python-packages/mplhep { };
-    uhi = finalPy.callPackage ./python-packages/uhi { };
-    # matplotlib = finalPy.callPackage ./python-packages/matplotlib { };
-    # scipy = finalPy.callPackage ./python-packages/scipy { };
-    # statsmodels = finalPy.callPackage ./python-packages/statsmodels { };
-    # packaging = finalPy.callPackage ./python-packages/packaging { };
+    # uhi = finalPy.callPackage ./python-packages/uhi { };
   };
   python3 = prev.python3.override { packageOverrides = final.pythonOverrides; };
   xgboost = prev.callPackage ./xgboost { };
