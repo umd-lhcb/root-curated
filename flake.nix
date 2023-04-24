@@ -37,6 +37,7 @@
           inherit (pkgs) vdt
             # root
             root
+            root_6_28_02
             root_6_24_02
             root_6_16_00
             root_6_12_06
