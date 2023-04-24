@@ -47,12 +47,37 @@ final: prev:
   roounfold = prev.callPackage ./roounfold { };
   roounfold_1_1 = prev.callPackage ./roounfold_1_1 { };
 
+  # ROOT 6.28 stack
+  root_6_28_02 = final.root;
+  hammer-phys-w_root_6_28 = prev.callPackage ./hammer-phys {
+    root = final.root_6_28_02;
+  };
+  hammer-phys-dev-w_root_6_28 = prev.callPackage ./hammer-phys {
+    root = final.root_6_28_02;
+  };
+  roounfold-w_root_6_28 = prev.callPackage ./roounfold {
+    root = final.root_6_28_02;
+  };
+  roounfold_1_1-w_root_6_28 = prev.callPackage ./roounfold_1_1 {
+    root = final.root_6_28_02;
+  };
+
   # ROOT 6.24 stack
-  root_6_24_02 = final.root;
+  root_6_24_02 = prev.callPackage ./root_6_24 {
+    python = final.python3;
+    inherit (prev.darwin.apple_sdk.frameworks) Cocoa CoreSymbolication OpenGL;
+    noSplash = true;
+  };
   hammer-phys-w_root_6_24 = prev.callPackage ./hammer-phys {
     root = final.root_6_24_02;
   };
+  hammer-phys-dev-w_root_6_24 = prev.callPackage ./hammer-phys-dev {
+    root = final.root_6_24_02;
+  };
   roounfold-w_root_6_24 = prev.callPackage ./roounfold {
+    root = final.root_6_24_02;
+  };
+  roounfold_1_1-w_root_6_24 = prev.callPackage ./roounfold_1_1 {
     root = final.root_6_24_02;
   };
 
