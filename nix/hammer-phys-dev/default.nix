@@ -12,13 +12,13 @@
 
 stdenv.mkDerivation rec {
   pname = "hammer-phys-dev";
-  version = "20230402";
+  version = "20230422";
 
   src = fetchFromGitLab {
     owner = "mpapucci";
     repo = "Hammer";
-    rev = "7474702d";
-    sha256 = "6MBhkYTZ1gWqWFgfYqfFGF/AHZYhtCF38BgNI6dWYr4=";
+    rev = "6188a2d8";
+    sha256 = "ydHC234l1WhF6xfwxXpxd5gk3bQOpwmBON88DdSAHPk=";
   };
 
   nativeBuildInputs = [ cmake pkgconfig ]
@@ -33,7 +33,6 @@ stdenv.mkDerivation rec {
 
   patches = [
     ./cymove_to_cython.patch
-    ./missing_symb.patch
   ];
 
   cmakeFlags = [
