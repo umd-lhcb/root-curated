@@ -33,7 +33,7 @@ final: prev:
   xgboost = prev.callPackage ./xgboost { };
 
   # Latest root
-  root = prev.callPackage ./root {
+  root = prev.callPackage ./root_6_28 {
     python = final.python3;
     inherit (prev.darwin.apple_sdk.frameworks) Cocoa CoreSymbolication OpenGL;
     noSplash = true;
