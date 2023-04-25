@@ -1,0 +1,13 @@
+diff --git a/roofit/histfactory/src/HistoToWorkspaceFactoryFast.cxx b/roofit/histfactory/src/HistoToWorkspaceFactoryFast.cxx
+index f195ef010d..34c3dee774 100644
+--- a/roofit/histfactory/src/HistoToWorkspaceFactoryFast.cxx
++++ b/roofit/histfactory/src/HistoToWorkspaceFactoryFast.cxx
+@@ -757,7 +757,7 @@ RooArgList HistoToWorkspaceFactoryFast::createObservables(const TH1 *hist, RooWo
+       fObsNameVec.push_back( fObsName );
+     }
+ 
+-    if (fObsNameVec.empty() || fObsNameVec.size() >= 3) {
++    if (fObsNameVec.empty() || fObsNameVec.size() > 3) {
+       throw hf_exc("HistFactory is limited to 1- to 3-dimensional histograms.");
+     }
+ 

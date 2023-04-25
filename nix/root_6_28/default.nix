@@ -110,6 +110,7 @@ stdenv.mkDerivation rec {
 
   patches = [
     ./sw_vers.patch
+    ./counting_error.patch
   ];
 
   preConfigure = ''
