@@ -10,12 +10,12 @@ final: prev:
   #   https://github.com/NixOS/nixpkgs/issues/44426#issuecomment-629635102
   pythonOverrides = finalPy: prevPy: {
     # updates
-    dask = finalPy.callPackage ./dask { };
-    dask-awkward = finalPy.callPackage ./dask-awkward { };
-    llvmlite = finalPy.callPackage ./llvmlite {
+    dask = finalPy.callPackage ./python-packages/dask { };
+    dask-awkward = finalPy.callPackage ./python-packages/dask-awkward { };
+    llvmlite = finalPy.callPackage ./python-packages/llvmlite {
       llvm = final.llvm_14;
     };
-    numba = finalPy.callPackage ./numba { };
+    numba = finalPy.callPackage ./python-packages/numba { };
 
     # overrides
     awkward-cpp = prevPy.awkward-cpp.overridePythonAttrs (old: rec {
