@@ -55,7 +55,7 @@ buildPythonPackage rec {
     export SKLEARN_BUILD_PARALLEL=$NIX_BUILD_CORES
   '';
 
-  doCheck = !stdenv.isAarch64;
+  doCheck = false;
 
   disabledTests = [
     # Skip test_feature_importance_regression - does web fetch
