@@ -27,7 +27,6 @@ final: prev:
       inherit (prev) gfortran glibcLocales;
     };
     mplhep = finalPy.callPackage ./python-packages/mplhep { };
-    # uhi = finalPy.callPackage ./python-packages/uhi { };
   };
   python3 = prev.python3.override { packageOverrides = final.pythonOverrides; };
   xgboost = prev.callPackage ./xgboost { };
