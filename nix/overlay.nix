@@ -9,23 +9,49 @@ final: prev:
   # Make the Python overrides composable. Idea stolen from:
   #   https://github.com/NixOS/nixpkgs/issues/44426#issuecomment-629635102
   pythonOverrides = finalPy: prevPy: {
-    # cython = finalPy.callPackage ./python-packages/Cython { };
-    # numpy = finalPy.callPackage ./python-packages/numpy { };
-    # awkward = finalPy.callPackage ./python-packages/awkward { };
-    # boost-histogram = finalPy.callPackage ./python-packages/boost-histogram {
-    #   inherit (final) boost;
-    # };
-    # pyyaml = finalPy.callPackage ./python-packages/pyyaml { };
-    # uncertainties = finalPy.callPackage ./python-packages/uncertainties { };
-    # uproot = finalPy.callPackage ./python-packages/uproot { };
-    # pandas = finalPy.callPackage ./python-packages/pandas { };
-    # patsy = finalPy.callPackage ./python-packages/patsy { };
+    # updates
+    dask = finalPy.callPackage ./dask { };
+    dask-awkward = finalPy.callPackage ./dask-awkward { };
+    llvmlite = finalPy.callPackage ./llvmlite {
+      llvm = final.llvm_14;
+    };
+    numba = finalPy.callPackage ./numba { };
+
+    # overrides
+    awkward-cpp = prevPy.awkward-cpp.overridePythonAttrs (old: rec {
+      version = "15";
+      src = prevPy.fetchPypi {
+        pname = old.pname;
+        version = version;
+        sha256 = "sha256-9sgl2y25gfhSkD2VdKBwFcXVPvjkYwdy8Yx/FnBFqg0=";
+      };
+    });
+    awkward = prevPy.awkward.overridePythonAttrs (old: rec {
+      version = "2.2.0";
+      src = prevPy.fetchPypi {
+        pname = old.pname;
+        version = version;
+        sha256 = "sha256-F6hTt0s5JfERbYei0EnSMPfReRd/s2+BlBMY58VFqT0=";
+      };
+    });
+    uproot = prevPy.uproot.overridePythonAttrs (old: rec {
+      version = "5.0.7";
+      src = prevPy.fetchPypi {
+        pname = old.pname;
+        version = version;
+        sha256 = "sha256-u/GY/XpyMDS7YjeIOIXzn11CwusMqG8yZmnwqsg66uI=";
+      };
+    });
+
+    # fixed version for ml model compat
     xgboost = finalPy.callPackage ./python-packages/xgboost {
       inherit (final) xgboost;
     };
     scikit-learn = finalPy.callPackage ./python-packages/scikit-learn {
       inherit (prev) gfortran glibcLocales;
     };
+
+    # new packages
     mplhep = finalPy.callPackage ./python-packages/mplhep { };
   };
   python3 = prev.python3.override { packageOverrides = final.pythonOverrides; };
