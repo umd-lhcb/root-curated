@@ -2,11 +2,11 @@
 
 buildPythonPackage rec {
   pname = "mplhep";
-  version = "0.3.25";
+  version = "0.3.28";
 
   src = fetchPypi {
     inherit pname version;
-    sha256 = "6a2a7996fe18506bbae54756ecea403b3f7b0e23f0fc9030fe9aeba88e1e6386";
+    sha256 = "sha256-/7nfjIdlYoouDOI1vXdr9BSml5gpE0gad7ONAUmOCiE=";
   };
 
   patches = [
