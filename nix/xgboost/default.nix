@@ -34,7 +34,7 @@ stdenv.mkDerivation rec {
   ];
 
   buildInputs = [ gtest ] ++ lib.optional cudaSupport cudaPackages.cudatoolkit
-                ++ lib.optional ncclSupport cudaPackages.nccl;
+    ++ lib.optional ncclSupport cudaPackages.nccl;
 
   cmakeFlags = lib.optionals doCheck [ "-DGOOGLE_TEST=ON" ]
     ++ lib.optionals cudaSupport [ "-DUSE_CUDA=ON" "-DCUDA_HOST_COMPILER=${cudaPackages.cudatoolkit.cc}/bin/cc" ]
@@ -49,16 +49,18 @@ stdenv.mkDerivation rec {
     ctest --force-new-ctest-process ${lib.optionalString cudaSupport "-E TestXGBoostLib"}
   '';
 
-  installPhase = let
-    libname = "libxgboost${stdenv.hostPlatform.extensions.sharedLibrary}";
-  in ''
-    runHook preInstall
-    mkdir -p $out
-    cp -r ../include $out
-    install -Dm755 ../lib/${libname} $out/lib/${libname}
-    install -Dm755 ../xgboost $out/bin/xgboost
-    runHook postInstall
-  '';
+  installPhase =
+    let
+      libname = "libxgboost${stdenv.hostPlatform.extensions.sharedLibrary}";
+    in
+    ''
+      runHook preInstall
+      mkdir -p $out
+      cp -r ../include $out
+      install -Dm755 ../lib/${libname} $out/lib/${libname}
+      install -Dm755 ../xgboost $out/bin/xgboost
+      runHook postInstall
+    '';
 
   meta = with lib; {
     description = "Scalable, Portable and Distributed Gradient Boosting (GBDT, GBRT or GBM) Library";

@@ -135,7 +135,7 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     homepage = "https://root.cern.ch/";
     description = "A data analysis framework";
-    platforms = platforms.linux;  # disable macOS support
+    platforms = platforms.linux; # disable macOS support
     maintainers = [ maintainers.veprbl ];
     license = licenses.lgpl21;
   };
