@@ -1,0 +1,40 @@
+diff --git a/cmake/modules/RootMacros.cmake b/cmake/modules/RootMacros.cmake
+index 6e28c5e2c9..a803ae779c 100644
+--- a/cmake/modules/RootMacros.cmake
++++ b/cmake/modules/RootMacros.cmake
+@@ -614,7 +614,10 @@ function(ROOT_GENERATE_DICTIONARY dictionary)
+       else()
+         set(module_incs $<TARGET_PROPERTY:${ARG_MODULE},INCLUDE_DIRECTORIES>)
+       endif()
+-      set(module_defs $<TARGET_PROPERTY:${ARG_MODULE},COMPILE_DEFINITIONS>)
++      # The COMPILE_DEFINITIONS list might contain empty elements. These are
++      # removed with the FILTER generator expression, excluding elements that
++      # match the ^$ regexp (only matches empty strings).
++      set(module_defs "$<FILTER:$<TARGET_PROPERTY:${ARG_MODULE},COMPILE_DEFINITIONS>,EXCLUDE,^$>")
+     endif()
+   endif()
+ 
+diff --git a/interpreter/cling/include/cling/std.modulemap b/interpreter/cling/include/cling/std.modulemap
+index 6b9acf1140..5cedc1ab6e 100644
+--- a/interpreter/cling/include/cling/std.modulemap
++++ b/interpreter/cling/include/cling/std.modulemap
+@@ -420,11 +420,19 @@ module "std" [system] {
+     export *
+     header "bits/locale_facets.h"
+   }
++  module "bits/stl_algobase.h" {
++    export *
++    header "bits/stl_algobase.h"
++  }
+   module "bits/stl_map.h" {
+     export *
+     export bits_stl_tree_h
+     header "bits/stl_map.h"
+   }
++  module "bits/stl_pair.h" {
++    export *
++    header "bits/stl_pair.h"
++  }
+   explicit module "bits_stl_tree_h" {
+     export *
+     header "bits/stl_tree.h"

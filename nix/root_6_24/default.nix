@@ -15,6 +15,7 @@
 , libXext
 , libGLU
 , libGL
+, libxcrypt
 , libxml2
 , expat
 , lz4
@@ -51,7 +52,7 @@ stdenv.mkDerivation rec {
   };
 
   nativeBuildInputs = [ makeWrapper cmake pkg-config git ];
-  buildInputs = [ ftgl gl2ps glew pcre zlib zstd libxml2 lz4 xz gsl xxHash libAfterImage giflib libjpeg libtiff libpng nlohmann_json python.pkgs.numpy ]
+  buildInputs = [ ftgl gl2ps glew pcre zlib zstd libxcrypt libxml2 lz4 xz gsl xxHash libAfterImage giflib libjpeg libtiff libpng nlohmann_json python.pkgs.numpy ]
     ++ lib.optionals (!stdenv.isDarwin) [ libX11 libXpm libXft libXext libGLU libGL expat ]
     ++ lib.optionals (stdenv.isDarwin) [ Cocoa CoreSymbolication OpenGL ]
     ++ lib.optionals (implicitMT) [ tbb ]
@@ -61,6 +62,7 @@ stdenv.mkDerivation rec {
   patches = [
     ./sw_vers.patch
     ./hist_factory.patch
+    ./gcc12_fixes.patch
   ];
 
   preConfigure = ''
