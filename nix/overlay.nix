@@ -1,6 +1,9 @@
 final: prev:
 
 {
+  # Override stuff so they build
+  git = prev.git.overrideAttrs (_: { doCheck = false; });
+
   # Dependencies
   vdt = prev.callPackage ./vdt { };
   boost = prev.boost17x; # set default boost to 1.7x

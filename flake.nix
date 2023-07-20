@@ -34,7 +34,7 @@
             uhi
           ]);
 
-          inherit (pkgs) vdt
+          inherit (pkgs) vdt git
             # root
             root
             root_6_24_02
