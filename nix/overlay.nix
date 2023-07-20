@@ -2,7 +2,7 @@ final: prev:
 
 {
   # Override stuff so they build
-  git = prev.git.overrideAttrs (_: { doCheck = false; });
+  git = prev.git.overrideAttrs (_: { doInstallCheck = false; });
 
   # Dependencies
   vdt = prev.callPackage ./vdt { };
