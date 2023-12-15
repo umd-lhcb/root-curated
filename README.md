@@ -5,36 +5,95 @@ a version of ROOT 6 w/ HistFactory patches (from Phoebe) applied.
 
 ## Install `nix` on macOS (ARM-based)
 
-1. Go to [the official page](https://nixos.org/download.html),
+1. Go to [the official page](https://nixos.org/download.html#nix-install-macos),
     follow the _Multi-user installation_ guide.
 
     Or, just paste this to your terminal:
 
     ```
-    sh <(curl -L https://nixos.org/nix/install) --daemon
+    sh <(curl -L https://nixos.org/nix/install)
     ```
+    To unistall follow [Uninstalling Nix](https://nixos.org/manual/nix/stable/installation/uninstall). After reinstalling, if you have a dead symlink follow [SSL CA cert error on MacOS](https://discourse.nixos.org/t/ssl-ca-cert-error-on-macos/31171).
 
 2. Install `Rosetta 2` by pasting this to your terminal:
 
     ```shell
-    sudo softwareupdate --install-rosetta --agree-to-license
+    sudo /usr/sbin/softwareupdate --install-rosetta --agree-to-license
     ```
 
-2. Edit `/etc/nix/nix.conf` with sudo permission and add the following lines:
+3. Install [`nix-darwin`](https://github.com/LnL7/nix-darwin) by pasting this to your terminal:
 
     ```shell
-    experimental-features = nix-command flakes
-    #sandbox = false  # uncomment if you are on macOS!
-    system = x86_64-darwin
-    extra-platforms = x86_64-darwin aarch64-darwin
+    nix-build https://github.com/LnL7/nix-darwin/archive/master.tar.gz -A installer
+    ./result/bin/darwin-installer
     ```
+    When asked, edit the default `configuration.nix` before starting and add the following lines:
+    ```shell
+    nix.settings.experimental-features = "nix-command flakes";
+    nix.settings.sandbox = false;
+    nix.settings.system = "x86_64-darwin";
+    nix.settings.extra-platforms = "x86_64-darwin aarch64-darwin";
+    ```
+    You can also edit `environment.systemPackages` (where you can install additional packages) like this:
+    ```shell
+    environment.systemPackages = with pkgs; [
+        gitAndTools.gitFull
+        python38
+        (lowPrio python39)
+    ];
+    ```
+    The basic workflow for using `Nix` is editing `~/.nixpkgs/darwin-configuration.nix` and then running `darwin-rebuild switch` to activate those changes.
 
-3. Reboot your mac. Check that `nix flake` returns something.
-4. Clone this project. In project root, run:
+4. Reboot your mac. Check that `nix flake` returns something.
+
+5. Clone this project. In `nix/python-packages/xgboost/default.nix` comment the two lines that refer to `graphviz`. Update `nix/python-packages/scikit-learn/default.nix` to version [`1.1.1`](https://github.com/NixOS/nixpkgs/blob/27668c5709f8e68760f521c0d91943dafeeea939/pkgs/development/python-modules/scikit-learn/default.nix). An example can be found in this section: [Create a new ROOT derivation](#create-a-new-root-derivation).
+
+6. In project root, run:
 
     ```
     nix develop
     ```
+
+7. Make sure that you always use the local version of `root-curated` when you install an additional package. I.e. `flake.nix` of `lhcb-ntuples-gen` should look like this:
+    ```shell
+    inputs = {
+        root-curated.url = "~/umd-lhcb/root-curated";
+        nixpkgs.follows = "root-curated/nixpkgs";
+        flake-utils.follows = "root-curated/flake-utils";
+
+        MuonBDTPid.url = "github:umd-lhcb/MuonBDTPid";
+        hammer-reweight.url = "github:umd-lhcb/hammer-reweight";
+        misid-unfold.url = "~/umd-lhcb/misid-unfold";
+        vertex-resolution.url = "~/umd-lhcb/vertex-resolution";
+
+        flake-compat = {
+            url = "github:edolstra/flake-compat";
+            flake = false;
+        };
+    };
+    ```
+
+8. Notice that we also use a local version of `misid-unfold` and `vertex-resolution`. Some packages, like these two, are missing a library in `Makefile`. Make sure that in their `Makefile` you have:
+    ```shell
+    LINKFLAGS       :=      $(shell root-config --libs) -lc++fs
+    ```
+    More information about using `<filesystem>` and `libc++fs` can be found in this link: [libc++ 8.0 documentation](https://releases.llvm.org/8.0.0/projects/libcxx/docs/UsingLibcxx.html).
+
+9. If you have issues witn `docker` you can try `colima` to run `docker` containers on macOS. This is how you can install it with `Homebrew` together with some useful commands:
+    ```shell
+    brew install docker docker-compose docker-machine colima
+    ```
+    ```shell
+    colima delete
+    colima start --arch x86_64
+    colima stop
+    ```
+    <u>Note</u>: On our server, `glacier`, after you install `docker` and `colima` using the `server-user-config` package, you can start colima with the command:
+    ```shell
+    colima start --arch aarch64
+    ```
+
+10. If needed, you can locally install `ROOT 6.28/06` from source which can be obtained from the corresponding public [Git repository](https://root.cern/releases/release-62806/#git).
 
 
 ## Install `nix` on macOS
