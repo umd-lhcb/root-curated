@@ -79,21 +79,32 @@ a version of ROOT 6 w/ HistFactory patches (from Phoebe) applied.
     ```
     More information about using `<filesystem>` and `libc++fs` can be found in this link: [libc++ 8.0 documentation](https://releases.llvm.org/8.0.0/projects/libcxx/docs/UsingLibcxx.html).
 
-9. If you have issues witn `docker` you can try `colima` to run `docker` containers on macOS. This is how you can install it with `Homebrew` together with some useful commands:
+9. If you have issues witn `docker` you can try [`colima`](https://github.com/abiosoft/colima) to run `docker` containers on macOS. This is how you can install it with `Homebrew` together with some useful commands:
     ```shell
     brew install docker docker-compose docker-machine colima
     ```
     ```shell
-    colima delete
-    colima start --arch x86_64
     colima stop
+    colima delete # delete existing instance
+    # Start with Rosetta 2 emulation
+    colima start --arch aarch64 --vm-type=vz --vz-rosetta --cpu 4 --memory 8 --disk 120
     ```
-    <u>Note</u>: On our server, `glacier`, after you install `docker` and `colima` using the `server-user-config` package, you can start colima with the command:
+    <u>Note</u>: On our server, `glacier`, you can install `docker` and `colima` using the `server-user-config` package.
+
+10. Edit `lhcb-ntuples-gen/Makefile` and add the `--platform linux/amd64` option when you `docker run`:
     ```shell
-    colima start --arch aarch64
+    ifeq ($(OS),Darwin)
+    DV_CMD = "docker run --rm -it --platform linux/amd64 -v $(PWD):/data -e UID=$$(id -u) -e GID=$$(id -g) --net=host umdlhcb/lhcb-stack-cc7:${DAVINCI_VERSION}"
+    else
+    DV_CMD = "docker run --rm -it -v $(PWD):/data -v $$HOME/.Xauthority:/home/physicist/.Xauthority -e DISPLAY -e UID=$$(id -u) -e GID=$$(id -g) --net=host umdlhcb/lhcb-stack-cc7:${DAVINCI_VERSION}"
+    endif
+    ```
+    Alternatively, you can add this line to `.zshrc`:
+    ```shell
+    export DOCKER_DEFAULT_PLATFORM=linux/amd64
     ```
 
-10. If needed, you can locally install `ROOT 6.28/06` from source which can be obtained from the corresponding public [Git repository](https://root.cern/releases/release-62806/#git).
+11. If needed, you can locally install `ROOT 6.28/06` from source which can be obtained from the corresponding public [Git repository](https://root.cern/releases/release-62806/#git).
 
 
 ## Install `nix` on macOS
