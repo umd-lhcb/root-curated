@@ -8,7 +8,6 @@
 , xgboost
 , pandas
 , matplotlib
-, graphviz
 , datatable
 , hypothesis
 }:
@@ -25,7 +24,6 @@ buildPythonPackage {
     scikit-learn
     pandas
     matplotlib
-    graphviz
     datatable
     hypothesis
   ];

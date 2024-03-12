@@ -72,7 +72,9 @@ a version of ROOT 6 w/ HistFactory patches (from Phoebe) applied.
         };
     };
     ```
-
+    Note that it is possible that you need `git+file:` before a local path for `nix` to find your
+    local repo.
+    
 8. Notice that we also use a local version of `misid-unfold` and `vertex-resolution`. Some packages, like these two, are missing a library in `Makefile`. Make sure that in their `Makefile` you have:
     ```shell
     LINKFLAGS       :=      $(shell root-config --libs) -lc++fs
