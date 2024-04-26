@@ -38,8 +38,8 @@
 , CoreSymbolication
 , OpenGL
 , noSplash ? false
-, implicitMT ? false
-, automaticSIMD ? false
+, implicitMT ? true
+, automaticSIMD ? true
 }:
 
 stdenv.mkDerivation rec {
