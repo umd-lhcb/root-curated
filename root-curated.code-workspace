@@ -1,0 +1,102 @@
+{
+    "extensions": {
+        "recommendations": [
+            "albertopdrf.root-file-viewer",
+            "eamodio.gitlens",
+            "eeyore.yapf",
+            "ms-python.flake8",
+            "ms-python.python",
+            "ms-python.vscode-pylance",
+            "ms-vscode.cpptools",
+            "twxs.cmake",
+            "trond-snekvik.simple-rst",
+            "davidanson.vscode-markdownlint",
+            "streetsidesoftware.code-spell-checker",
+            "bbenoist.Nix"
+        ]
+    },
+    "folders": [
+        {
+            "path": "./"
+        }
+    ],
+    "settings": {
+        "C_Cpp.configurationWarnings": "disabled",
+        "C_Cpp.default.browse.databaseFilename": "${workspaceFolder}/.vscode-cpptools/browse.VC.db",
+        "C_Cpp.default.browse.path": [],
+        "C_Cpp.default.cStandard": "c11",
+        "C_Cpp.default.compileCommands": "",
+        "C_Cpp.default.compilerPath": "/usr/bin/g++",
+        "C_Cpp.default.configurationProvider": "nonexistent.extension",
+        "C_Cpp.default.cppStandard": "c++17",
+        "C_Cpp.default.defines": [],
+        "C_Cpp.default.includePath": [],
+        "C_Cpp.default.intelliSenseMode": "gcc-x64",
+        "C_Cpp.files.exclude": {
+            "**/.vscode": true,
+            "**/.vscode-cpptools/": true,
+            "/usr": true
+        },
+        "C_Cpp.intelliSenseCachePath": "${workspaceFolder}/.vscode-cpptools/cache",
+        "C_Cpp.intelliSenseCacheSize": 0,
+        "C_Cpp.workspaceParsingPriority": "low",
+        "[python]": {
+            "editor.defaultFormatter": "eeyore.yapf"
+        },
+        "cSpell.diagnosticLevel": "Hint",
+        "cSpell.enabledLanguageIds": [
+            "c",
+            "cpp",
+            "markdown",
+            "python",
+            "restructuredtext",
+            "text"
+        ],
+        "cSpell.language": "en,en-GB",
+        "cSpell.languageSettings": [
+            {
+                "includeRegExpList": [
+                    "/#.*/",
+                    "/('''|\"\"\")[^\\1]+?\\1/g",
+                    "strings"
+                ],
+                "languageId": "python"
+            },
+            {
+                "allowCompoundWords": false,
+                "ignoreRegExpList": [
+                    "/#include.*/"
+                ],
+                "includeRegExpList": [
+                    "CStyleComment",
+                    "string"
+                ],
+                "languageId": "cpp,c"
+            }
+        ],
+        "files.associations": {
+            "*.C": "cpp",
+            "*.icpp": "cpp",
+            "cmath": "cpp",
+            "iostream": "cpp",
+            "ostream": "cpp",
+            "chrono": "cpp",
+            "functional": "cpp"
+        },
+        "files.trimTrailingWhitespace": true,
+        "flake8.args": [
+            "--select=F,E71,E9,W1,W6"
+        ],
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "python.languageServer": "Pylance",
+        "remote.downloadExtensionsLocally": true,
+        "restructuredtext.linter.disabledLinters": [
+            "doc8",
+            "rst-lint",
+            "rstcheck"
+        ],
+        "restructuredtext.linter.run": "off",
+        "telemetry.enableCrashReporter": false,
+        "window.title": "${dirty}${activeEditorShort}${separator}${rootPath}"
+    }
+}
