@@ -59,6 +59,8 @@ stdenv.mkDerivation rec {
     ++ lib.optionals (automaticSIMD) [ vdt ]
   ;
 
+  enableParallelBuilding = true;
+
   patches = [
     ./sw_vers.patch
     ./hist_factory.patch
