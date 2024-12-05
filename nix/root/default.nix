@@ -39,7 +39,7 @@
 , OpenGL
 , noSplash ? false
 , implicitMT ? true
-, automaticSIMD ? true
+, automaticSIMD ? false
 }:
 
 stdenv.mkDerivation rec {
