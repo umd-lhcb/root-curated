@@ -33,11 +33,12 @@
 , nlohmann_json
 , tbb
 , vdt
+, fftw
 , Cocoa
 , CoreSymbolication
 , OpenGL
 , noSplash ? false
-, implicitMT ? false
+, implicitMT ? true
 , automaticSIMD ? false
 }:
 
@@ -51,12 +52,14 @@ stdenv.mkDerivation rec {
   };
 
   nativeBuildInputs = [ makeWrapper cmake pkg-config git ];
-  buildInputs = [ ftgl gl2ps glew pcre zlib zstd libxml2 lz4 xz gsl xxHash libAfterImage giflib libjpeg libtiff libpng nlohmann_json python.pkgs.numpy ]
+  buildInputs = [ ftgl gl2ps glew pcre zlib zstd libxml2 lz4 xz gsl xxHash libAfterImage giflib libjpeg libtiff libpng nlohmann_json python.pkgs.numpy fftw ]
     ++ lib.optionals (!stdenv.isDarwin) [ libX11 libXpm libXft libXext libGLU libGL expat ]
     ++ lib.optionals (stdenv.isDarwin) [ Cocoa CoreSymbolication OpenGL ]
     ++ lib.optionals (implicitMT) [ tbb ]
     ++ lib.optionals (automaticSIMD) [ vdt ]
   ;
+
+  enableParallelBuilding = true;
 
   patches = [
     ./sw_vers.patch
@@ -99,7 +102,7 @@ stdenv.mkDerivation rec {
     "-Ddavix=OFF"
     "-Ddcache=OFF"
     "-Dfail-on-missing=ON"
-    "-Dfftw3=OFF"
+    "-Dfftw3=ON"
     "-Dfitsio=OFF"
     "-Dfortran=OFF"
     "-Dgfal=OFF"
