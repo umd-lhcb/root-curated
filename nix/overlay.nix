@@ -1,44 +1,6 @@
 final: prev:
 
 {
-  # Override stuff so they build
-  git = prev.git.overrideAttrs (_: { doInstallCheck = false; });
-
-  # Dependencies
-  vdt = prev.callPackage ./vdt { };
-  boost = prev.boost17x; # set default boost to 1.7x
-
-  # Python stuff
-  # Make the Python overrides composable. Idea stolen from:
-  #   https://github.com/NixOS/nixpkgs/issues/44426#issuecomment-629635102
-  pythonOverrides = finalPy: prevPy: {
-    cython = finalPy.callPackage ./python-packages/Cython { };
-    numpy = finalPy.callPackage ./python-packages/numpy { };
-    awkward = finalPy.callPackage ./python-packages/awkward { };
-    boost-histogram = finalPy.callPackage ./python-packages/boost-histogram {
-      inherit (final) boost;
-    };
-    pyyaml = finalPy.callPackage ./python-packages/pyyaml { };
-    uncertainties = finalPy.callPackage ./python-packages/uncertainties { };
-    uproot = finalPy.callPackage ./python-packages/uproot { };
-    pandas = finalPy.callPackage ./python-packages/pandas { };
-    patsy = finalPy.callPackage ./python-packages/patsy { };
-    xgboost = finalPy.callPackage ./python-packages/xgboost {
-      inherit (final) xgboost;
-    };
-    scikit-learn = finalPy.callPackage ./python-packages/scikit-learn {
-      inherit (prev) gfortran glibcLocales;
-    };
-    mplhep = finalPy.callPackage ./python-packages/mplhep { };
-    uhi = finalPy.callPackage ./python-packages/uhi { };
-    # matplotlib = finalPy.callPackage ./python-packages/matplotlib { };
-    # scipy = finalPy.callPackage ./python-packages/scipy { };
-    # statsmodels = finalPy.callPackage ./python-packages/statsmodels { };
-    # packaging = finalPy.callPackage ./python-packages/packaging { };
-  };
-  python3 = prev.python3.override { packageOverrides = final.pythonOverrides; };
-  xgboost = prev.callPackage ./xgboost { };
-
   # Latest root
   root = prev.callPackage ./root {
     python = final.python3;
@@ -57,33 +19,6 @@ final: prev:
   };
   roounfold-w_root_6_24 = prev.callPackage ./roounfold {
     root = final.root_6_24_02;
-  };
-
-  # ROOT 6.16 stack
-  root_6_16_00 = prev.callPackage ./root_6_16 {
-    python = final.python3;
-    inherit (prev.darwin.apple_sdk.frameworks) Cocoa CoreSymbolication OpenGL;
-    noSplash = true;
-  };
-  hammer-phys-w_root_6_16 = prev.callPackage ./hammer-phys {
-    root = final.root_6_16_00;
-  };
-  roounfold-w_root_6_16 = prev.callPackage ./roounfold {
-    root = final.root_6_16_00;
-  };
-
-  # ROOT 6.12 stack
-  # NOTE: This doesn't support Python 3 and doesn't build on Big Sur :-(
-  root_6_12_06 = prev.callPackage ./root_6_12 {
-    python = final.python2;
-    inherit (prev.darwin.apple_sdk.frameworks) Cocoa CoreSymbolication OpenGL;
-    noSplash = true;
-  };
-  hammer-phys-w_root_6_12 = prev.callPackage ./hammer-phys {
-    root = final.root_6_12_06;
-  };
-  roounfold-w_root_6_12 = prev.callPackage ./roounfold {
-    root = final.root_6_12_06;
   };
 
   # ROOT 5.34
