@@ -1,0 +1,71 @@
+From e48ba0494b8f26b8b30a3b758eba47f8295768ed Mon Sep 17 00:00:00 2001
+From: Philippe Canal <pcanal@fnal.gov>
+Date: Fri, 3 Mar 2023 13:23:45 -0600
+Subject: [PATCH] fBits read: preserve kIsOnHeap, always set kNotDeleted.
+
+Rather than reading from the file the value of kIsOnHeap, preserve the value that was
+calculated at object creation time (i.e. in the current execution).  For example, for
+an embedded object (inside an object created on the heap or stack), the bit always
+need to be off (i.e. it can never be explicitly deleted)
+---
+ core/base/src/TObject.cxx             | 3 ++-
+ io/io/src/TStreamerInfoActions.cxx    | 2 ++
+ io/io/src/TStreamerInfoReadBuffer.cxx | 6 +++++-
+ 3 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/core/base/src/TObject.cxx b/core/base/src/TObject.cxx
+index 822562351c..31416e2107 100644
+--- a/core/base/src/TObject.cxx
++++ b/core/base/src/TObject.cxx
+@@ -880,8 +880,9 @@ void TObject::Streamer(TBuffer &R__b)
+    if (R__b.IsReading()) {
+       R__b.SkipVersion(); // Version_t R__v = R__b.ReadVersion(); if (R__v) { }
+       R__b >> fUniqueID;
++      const UInt_t isonheap = fBits & kIsOnHeap; // Record how this instance was actually allocated.
+       R__b >> fBits;
+-      fBits |= kIsOnHeap;  // by definition de-serialized object is on heap
++      fBits |= isonheap | kNotDeleted;  // by definition de-serialized object are not yet deleted.
+       if (TestBit(kIsReferenced)) {
+          //if the object is referenced, we must read its old address
+          //and store it in the ProcessID map in gROOT
+diff --git a/io/io/src/TStreamerInfoActions.cxx b/io/io/src/TStreamerInfoActions.cxx
+index a615e44434..7cdc0aeab5 100644
+--- a/io/io/src/TStreamerInfoActions.cxx
++++ b/io/io/src/TStreamerInfoActions.cxx
+@@ -236,7 +236,9 @@ namespace TStreamerInfoActions
+       UInt_t *x = (UInt_t*)( ((char*)addr) + config->fOffset );
+       // Idea: Implement buf.ReadBasic/Primitive to avoid the return value
+       // Idea: This code really belongs inside TBuffer[File]
++      const UInt_t isonheap = *x & TObject::kIsOnHeap; // Record how this instance was actually allocated.
+       buf >> *x;
++      *x |= isonheap | TObject::kNotDeleted;  // by definition de-serialized object are not yet deleted.
+ 
+       if ((*x & kIsReferenced) != 0) {
+          HandleReferencedTObject(buf,addr,config);
+diff --git a/io/io/src/TStreamerInfoReadBuffer.cxx b/io/io/src/TStreamerInfoReadBuffer.cxx
+index e9054d8d4e..5b84e330f9 100644
+--- a/io/io/src/TStreamerInfoReadBuffer.cxx
++++ b/io/io/src/TStreamerInfoReadBuffer.cxx
+@@ -609,6 +609,7 @@ Int_t TStreamerInfo::ReadBufferConv(TBuffer &b, const T &arr,  const TCompInfo *
+          DOLOOP {
+             UInt_t u;
+             b >> u;
++            u |= kNotDeleted;  // by definition de-serialized object are not yet deleted.
+             if ((u & kIsReferenced) != 0) {
+                UShort_t pidf;
+                b >> pidf;
+@@ -1019,7 +1020,10 @@ Int_t TStreamerInfo::ReadBuffer(TBuffer &b, const T &arr,
+          // special case for TObject::fBits in case of a referenced object
+          case TStreamerInfo::kBits: {
+             DOLOOP {
+-               UInt_t *x=(UInt_t*)(arr[k]+ioffset); b >> *x;
++               UInt_t *x=(UInt_t*)(arr[k]+ioffset);
++               const UInt_t isonheap = *x & TObject::kIsOnHeap; // Record how this instance was actually allocated.
++               b >> *x;
++               *x |= isonheap | TObject::kNotDeleted;  // by definition de-serialized object are not yet deleted.
+                if ((*x & kIsReferenced) != 0) {
+                   UShort_t pidf;
+                   b >> pidf;
+-- 
+2.25.1
+
