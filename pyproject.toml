@@ -10,7 +10,7 @@ packages = { find = { include = ["nix"] } }
 name = "py-common-pkgs"
 version = "0.0.0"
 
-requires-python = "~= 3.10"
+requires-python = "~= 3.11"
 
 dependencies = [
     "matplotlib",
@@ -30,6 +30,9 @@ dependencies = [
 
     "zfit~=0.25",
     "tf-keras",
+
+    # FIXME: dm-tree wheel problem: https://github.com/google-deepmind/tree/issues/129
+    # we can manually remove the incompatible wheel
 
     "mkdocs",
 ]
