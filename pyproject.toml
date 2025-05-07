@@ -13,13 +13,14 @@ version = "0.0.0"
 requires-python = ">=3.10"
 
 dependencies = [
-    "numpy",
     "matplotlib",
     "pyyaml",
 
     "uncertainties",
     "statsmodels",
     "scikit-learn",
+
+    "numpy==1.26.4",  # newer versions don't work well w/ xgboost 1.5
     "xgboost==1.5.2",
 
     "mplhep",

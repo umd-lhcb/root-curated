@@ -19,5 +19,27 @@
 
   # overrides
   deps = { nixpkgs, nixpkgsStable, ... }: {
+    inherit (nixpkgs)
+      cmake
+      llvmPackages
+      ;
+  };
+
+  overrides = {
+    xgboost = {
+      mkDerivation = {
+        nativeBuildInputs = lib.optionals config.deps.stdenv.isDarwin (with config.deps; [
+            cmake
+        ]);
+        buildInputs = lib.optionals config.deps.stdenv.isDarwin (with config.deps; [
+          llvmPackages.openmp
+        ]);
+
+        configurePhase = lib.optionalString config.deps.stdenv.isDarwin ''
+          mkdir -p xgboost/build
+          cmake -S xgboost -B xgboost/build
+        '';
+      };
+    };
   };
 }
