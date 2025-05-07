@@ -10,7 +10,7 @@ packages = { find = { include = ["nix"] } }
 name = "py-common-pkgs"
 version = "0.0.0"
 
-requires-python = ">=3.10"
+requires-python = "~= 3.10"
 
 dependencies = [
     "matplotlib",
@@ -28,7 +28,8 @@ dependencies = [
     "boost-histogram",
     "uproot",
 
-    #"zfit==0.10.1",
+    "zfit~=0.25",
+    "tf-keras",
 
     "mkdocs",
 ]

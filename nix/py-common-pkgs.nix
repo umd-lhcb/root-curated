@@ -23,6 +23,7 @@
       cmake
       llvmPackages
       ;
+    python = nixpkgs.python311;
   };
 
   overrides = {
@@ -40,6 +41,13 @@
           cmake -S xgboost -B xgboost/build
         '';
       };
+    };
+
+    tensorflow-io-gcs-filesystem = {
+      env.autoPatchelfIgnoreMissingDeps = [ "libtensorflow_framework.so.2" ];
+    };
+    tensorflow-addons = {
+      env.autoPatchelfIgnoreMissingDeps = [ "libtensorflow_framework.so.2" ];
     };
   };
 }
