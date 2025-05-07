@@ -1,0 +1,33 @@
+[build-system]
+requires = [ "setuptools" ]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = { find = { include = ["nix"] } }
+
+
+[project]
+name = "py-common-pkgs"
+version = "0.0.0"
+
+requires-python = ">=3.10"
+
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "pyyaml",
+
+    "uncertainties",
+    "statsmodels",
+    "scikit-learn",
+    "xgboost==1.5.2",
+
+    "mplhep",
+    "uhi",
+    "boost-histogram",
+    "uproot",
+
+    #"zfit==0.10.1",
+
+    "mkdocs",
+]
