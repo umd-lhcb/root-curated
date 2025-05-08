@@ -1,0 +1,21 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -49,10 +49,15 @@ else()
+ endif()
+ 
+ # SIMD and FMA instructions set-------------------------------------------------
+-if (NEON)
+-  message(STATUS "Using NEON instructions!")
+-  set(PACKED_INSTR "-mfpu=neon ")
++if (CMAKE_SYSTEM_PROCESSOR MATCHES "arm64" OR CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
++  message(STATUS "Detected Apple Silicon (ARM64), using NEON by default.")
++  set(PACKED_INSTR "")  # No special flag needed
+ else()
++  if (NEON)
++    message(STATUS "Using NEON instructions!")
++    set(PACKED_INSTR "-mfpu=neon ")
++  endif()
++
+   if (SSE AND (NOT (AVX OR AVX2) ))
+     message(STATUS "Using SSE instructions!")
+     set(PACKED_INSTR "-msse")

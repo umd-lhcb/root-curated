@@ -28,6 +28,10 @@ final: prev:
     noSplash = true;
   };
 
+  # libs
+  pythonHEP = prev.python311;
+  vdt = prev.callPackage ./vdt { python = final.pythonHEP; };
+
   # General utilities
   clang-format-all = prev.callPackage ./clang-format-all { };
 
