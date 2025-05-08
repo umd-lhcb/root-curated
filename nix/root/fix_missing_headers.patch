@@ -1,0 +1,10 @@
+--- a/math/mathcore/inc/Math/Random.h
++++ b/math/mathcore/inc/Math/Random.h
+@@ -25,6 +25,7 @@
+ 
+ #include <string>
+ #include <vector>
++#include <cstdint>
+ 
+ 
+ namespace ROOT {

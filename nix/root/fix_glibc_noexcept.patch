@@ -1,0 +1,13 @@
+--- a/core/clib/inc/strlcpy.h
++++ b/core/clib/inc/strlcpy.h
+@@ -23,8 +23,8 @@
+ extern "C" {
+ #endif
+ 
+-size_t strlcpy(char *dst, const char *src, size_t siz);
+-size_t strlcat(char *dst, const char *src, size_t siz);
++size_t strlcpy(char *dst, const char *src, size_t siz) noexcept;
++size_t strlcat(char *dst, const char *src, size_t siz) noexcept;
+ 
+ #ifdef __cplusplus
+ }

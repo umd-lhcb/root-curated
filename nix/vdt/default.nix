@@ -1,6 +1,6 @@
 { stdenv
 , cmake
-, python
+, python3
 , fetchFromGitHub
 }:
 
@@ -15,7 +15,7 @@ stdenv.mkDerivation rec {
     sha256 = "sha256-wnnFby4J4k0TQcLwy4wiEdldJVzc9+yIxwESaI+KmqY=";
   };
 
-  nativeBuildInputs = [ cmake python ];
+  nativeBuildInputs = [ cmake python3 ];
 
   patches = [ ./fix_build_on_apple_silicon.patch ];
 }

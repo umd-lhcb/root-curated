@@ -23,7 +23,10 @@
       _module.args.pkgs' = import inputs.nixpkgs {
         inherit system;
         overlays = [ self.overlays.default ];
-        config = { allowUnfree = true; };
+        config = {
+          allowUnfree = true;
+          #replaceStdenv = { pkgs, ... }: if pkgs.stdenv.hostPlatform.isLinux then pkgs.gcc11Stdenv else pkgs.stdenv;
+        };
       };
 
       # to generate lock file: `nix run .#py-common-pkgs.lock`

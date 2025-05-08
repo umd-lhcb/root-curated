@@ -1,45 +1,50 @@
 { stdenv
-, breakpointHook
 , lib
 , fetchurl
 , makeWrapper
+, apple-sdk
 , cmake
+, coreutils
 , git
+, fftw
 , ftgl
 , gl2ps
 , glew
+, gnugrep
+, gnused
 , gsl
-, libX11
-, libXpm
-, libXft
-, libXext
 , libGLU
 , libGL
+, libxcrypt
 , libxml2
-, expat
+, lsof
 , lz4
+, xorg
 , xz
+, man
 , pcre
+, nlohmann_json
 , pkg-config
-, python
+, procps
+, python3
+, which
 , xxHash
 , zlib
 , zstd
-, libAfterImage
 , giflib
 , libjpeg
 , libtiff
 , libpng
-, nlohmann_json
+, patchRcPathCsh
+, patchRcPathFish
+, patchRcPathPosix
 , tbb
 , vdt
-, fftw
-, Cocoa
-, CoreSymbolication
-, OpenGL
-, noSplash ? false
-, implicitMT ? true
-, automaticSIMD ? true
+, xrootd
+, noSplash ? true
+, implicitMT ? false
+, automaticSIMD ? false
+, useXrootd? false
 }:
 
 stdenv.mkDerivation rec {
@@ -51,24 +56,68 @@ stdenv.mkDerivation rec {
     sha256 = "0507e1095e279ccc7240f651d25966024325179fa85a1259b694b56723ad7c1c";
   };
 
-  nativeBuildInputs = [ makeWrapper cmake pkg-config git ];
-  buildInputs = [ ftgl gl2ps glew pcre zlib zstd libxml2 lz4 xz gsl xxHash libAfterImage giflib libjpeg libtiff libpng nlohmann_json python.pkgs.numpy fftw ]
-    ++ lib.optionals (!stdenv.isDarwin) [ libX11 libXpm libXft libXext libGLU libGL expat ]
-    ++ lib.optionals (stdenv.isDarwin) [ Cocoa CoreSymbolication OpenGL ]
+  nativeBuildInputs = [
+    makeWrapper
+    cmake
+    pkg-config
+    git
+  ];
+
+  propagatedBuildInputs = [
+    nlohmann_json # link interface of target "ROOT::ROOTEve", not applicable to our version?
+  ];
+
+  buildInputs =
+    [
+      fftw
+      ftgl
+      giflib
+      gl2ps
+      glew
+      gsl
+      libjpeg
+      libpng
+      libtiff
+      libxcrypt
+      libxml2
+      lz4
+      patchRcPathCsh
+      patchRcPathFish
+      patchRcPathPosix
+      pcre
+      python3.pkgs.numpy
+      xxHash
+      xz
+      zlib
+      zstd
+    ]
     ++ lib.optionals (implicitMT) [ tbb ]
     ++ lib.optionals (automaticSIMD) [ vdt ]
-  ;
+    ++ lib.optionals (useXrootd) [ xrootd ]
+    ++ lib.optionals (stdenv.hostPlatform.isDarwin) [ apple-sdk.privateFrameworksHook ]
+    ++ lib.optionals (!stdenv.hostPlatform.isDarwin) [
+      libGLU
+      libGL
+      xorg.libX11
+      xorg.libXpm
+      xorg.libXft
+      xorg.libXext
+    ];
 
   patches = [
     ./sw_vers.patch
     ./hist_factory.patch
     ./fix_file_read.patch
+    ./fix_glibc_noexcept.patch
+    ./fix_std_modulemap.patch
+    ./fix_cmake_quotation.patch
+    ./fix_missing_headers.patch
   ];
 
   preConfigure = ''
     rm -rf builtins/*
     substituteInPlace cmake/modules/SearchInstalledSoftware.cmake \
-      --replace 'set(lcgpackages ' '#set(lcgpackages '
+      --replace-fail 'set(lcgpackages ' '#set(lcgpackages '
 
     # Don't require textutil on macOS
     : > cmake/modules/RootCPack.cmake
@@ -80,19 +129,25 @@ stdenv.mkDerivation rec {
     patchShebangs build/unix/
   '' + lib.optionalString noSplash ''
     substituteInPlace rootx/src/rootx.cxx --replace "gNoLogo = false" "gNoLogo = true"
-  '' + lib.optionalString stdenv.isDarwin ''
+  '' + lib.optionalString stdenv.hostPlatform.isDarwin ''
     # Eliminate impure reference to /System/Library/PrivateFrameworks
     substituteInPlace core/CMakeLists.txt \
-      --replace "-F/System/Library/PrivateFrameworks" ""
-  '';
+      --replace-fail "-F/System/Library/PrivateFrameworks" ""
+  '' + lib.optionalString
+        (stdenv.hostPlatform.isDarwin && lib.versionAtLeast stdenv.hostPlatform.darwinMinVersion "11")
+        ''
+          MACOSX_DEPLOYMENT_TARGET=10.16
+        '';
 
   cmakeFlags = [
     "-Drpath=ON"
     "-DCMAKE_CXX_STANDARD=17"
+    "-DCMAKE_DISABLE_FIND_PACKAGE_Python2=TRUE"
     "-DCMAKE_INSTALL_LIBDIR=lib"
     "-DCMAKE_INSTALL_INCLUDEDIR=include"
     "-Dbuiltin_nlohmannjson=OFF"
     "-Dbuiltin_openui5=OFF"
+    "-Dbuiltin_afterimage=ON"  # FIXME: newer versions of root probably don't need this
     "-Dalien=OFF"
     "-Dbonjour=OFF"
     "-Dcastor=OFF"
@@ -124,20 +179,12 @@ stdenv.mkDerivation rec {
     "-Dssl=OFF"
     "-Dwebgui=OFF"
     "-Dxml=ON"
-    "-Dxrootd=OFF"
   ]
   ++ lib.optional (stdenv.cc.libc != null) "-DC_INCLUDE_DIRS=${lib.getDev stdenv.cc.libc}/include"
-  ++ lib.optionals stdenv.isDarwin [
-    "-DOPENGL_INCLUDE_DIR=${OpenGL}/Library/Frameworks"
-    "-DCMAKE_DISABLE_FIND_PACKAGE_Python2=TRUE"
-
-    # fatal error: module map file '/nix/store/<hash>-Libsystem-osx-10.12.6/include/module.modulemap' not found
-    # fatal error: could not build module '_Builtin_intrinsics'
-    "-Druntime_cxxmodules=OFF"
-
-  ]
+  ++ lib.optional (stdenv.hostPlatform.isDarwin) "-Druntime_cxxmodules=OFF"
   ++ (if implicitMT then [ "-Dimt=ON" ] else [ "-Dimt=OFF" ])
   ++ (if automaticSIMD then [ "-Dvdt=ON" ] else [ "-Dvdt=OFF" ])
+  ++ (if useXrootd then [ "-Dxrootd=ON" ] else [ "-Dxrootd=OFF" ])
   ;
 
   NIX_CFLAGS_COMPILE = "-O2 -march=native -mtune=native";
@@ -147,6 +194,51 @@ stdenv.mkDerivation rec {
       wrapProgram "$out/bin/$prog" \
         --prefix PYTHONPATH : "$out/lib"
     done
+
+    # Make ldd and sed available to the ROOT executable by prefixing PATH.
+    wrapProgram "$out/bin/root" \
+      --prefix PATH : "${
+        lib.makeBinPath [
+          gnused # sed
+          stdenv.cc # c++ ld etc.
+          stdenv.cc.libc # ldd
+        ]
+      }"
+
+    # Patch thisroot.{sh,csh,fish}
+
+    # The main target of `thisroot.sh` is "bash-like shells",
+    # but it also need to support Bash-less POSIX shell like dash,
+    # as they are mentioned in `thisroot.sh`.
+
+    patchRcPathPosix "$out/bin/thisroot.sh" "${
+      lib.makeBinPath [
+        coreutils # dirname tail
+        gnugrep # grep
+        gnused # sed
+        lsof # lsof
+        man # manpath
+        procps # ps
+        which # which
+      ]
+    }"
+    patchRcPathCsh "$out/bin/thisroot.csh" "${
+      lib.makeBinPath [
+        coreutils
+        gnugrep
+        gnused
+        lsof # lsof
+        man
+        which
+      ]
+    }"
+    patchRcPathFish "$out/bin/thisroot.fish" "${
+      lib.makeBinPath [
+        coreutils
+        man
+        which
+      ]
+    }"
   '';
 
   setupHook = ./setup-hook.sh;

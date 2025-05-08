@@ -1,12 +1,14 @@
 final: prev:
 
 {
+  # Aliases
+  pythonHEP = prev.python310;
+
+  # Libs
+  vdt = prev.callPackage ./vdt { python3 = final.pythonHEP; };
+
   # Latest root
-  root = prev.callPackage ./root {
-    python = final.python3;
-    inherit (prev.darwin.apple_sdk.frameworks) Cocoa CoreSymbolication OpenGL;
-    noSplash = true;
-  };
+  root = prev.callPackage ./root { python3 = final.pythonHEP; };
   hammer-phys = prev.callPackage ./hammer-phys { };
   hammer-phys-dev = prev.callPackage ./hammer-phys-dev { };
   roounfold = prev.callPackage ./roounfold { };
@@ -27,10 +29,6 @@ final: prev:
     stdenv = if prev.stdenv.cc.isClang then prev.llvmPackages_5.stdenv else prev.gcc8Stdenv;
     noSplash = true;
   };
-
-  # libs
-  pythonHEP = prev.python311;
-  vdt = prev.callPackage ./vdt { python = final.pythonHEP; };
 
   # General utilities
   clang-format-all = prev.callPackage ./clang-format-all { };
