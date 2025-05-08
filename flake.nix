@@ -67,7 +67,7 @@
 
         inputsFrom = [ packages.py-common-pkgs.devShell ];
         buildInputs = with pkgs'; [
-          #root
+          root
           #hammer-phys
           #roounfold
         ];
