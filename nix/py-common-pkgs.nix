@@ -23,7 +23,7 @@
       cmake
       llvmPackages
       ;
-    python = nixpkgs.python311;
+    python = nixpkgs.pythonHEP;
   };
 
   overrides = {
