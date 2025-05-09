@@ -13,6 +13,7 @@
 , gnugrep
 , gnused
 , gsl
+, libAfterImage
 , libGLU
 , libGL
 , libxcrypt
@@ -75,6 +76,7 @@ stdenv.mkDerivation rec {
       gl2ps
       glew
       gsl
+      libAfterImage
       libjpeg
       libpng
       libtiff
@@ -147,7 +149,6 @@ stdenv.mkDerivation rec {
     "-DCMAKE_INSTALL_INCLUDEDIR=include"
     "-Dbuiltin_nlohmannjson=OFF"
     "-Dbuiltin_openui5=OFF"
-    "-Dbuiltin_afterimage=ON"  # FIXME: newer versions of root probably don't need this
     "-Dalien=OFF"
     "-Dbonjour=OFF"
     "-Dcastor=OFF"
@@ -187,7 +188,7 @@ stdenv.mkDerivation rec {
   ++ (if useXrootd then [ "-Dxrootd=ON" ] else [ "-Dxrootd=OFF" ])
   ;
 
-  NIX_CFLAGS_COMPILE = "-O2 -march=native -mtune=native";
+  NIX_CFLAGS_COMPILE = if stdenv.hostPlatform.isLinux then "-O2 -march=native -mtune=native" else "-O2";
 
   postInstall = ''
     for prog in rootbrowse rootcp rooteventselector rootls rootmkdir rootmv rootprint rootrm rootslimtree; do

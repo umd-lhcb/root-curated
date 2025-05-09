@@ -59,6 +59,7 @@
           vdt
           git
           isa-l
+          libAfterImage
           ;
       };
 
