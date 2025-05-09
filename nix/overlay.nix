@@ -6,9 +6,13 @@ final: prev:
 
   # Libs
   vdt = prev.callPackage ./vdt { python3 = final.pythonHEP; };
+  libAfterImage = prev.callPackage ./libAfterImage { };
 
   # Latest root
-  root = prev.callPackage ./root { python3 = final.pythonHEP; };
+  root = prev.callPackage ./root {
+    python3 = final.pythonHEP;
+    stdenv = if prev.stdenv.cc.isClang then prev.overrideLibcxx prev.llvmPackages_12.stdenv else prev.stdenv;
+  };
   hammer-phys = prev.callPackage ./hammer-phys { };
   hammer-phys-dev = prev.callPackage ./hammer-phys-dev { };
   roounfold = prev.callPackage ./roounfold { };
