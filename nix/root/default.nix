@@ -65,6 +65,7 @@ stdenv.mkDerivation rec {
     ./sw_vers.patch
     ./hist_factory.patch
     ./fix_file_read.patch
+    ./roopowerlaw.patch
   ];
 
   preConfigure = ''

@@ -1,0 +1,233 @@
+diff --git a/roofit/batchcompute/inc/RooBatchCompute.h b/roofit/batchcompute/inc/RooBatchCompute.h
+index da3dd9c8e0..1239eb60f9 100644
+--- a/roofit/batchcompute/inc/RooBatchCompute.h
++++ b/roofit/batchcompute/inc/RooBatchCompute.h
+@@ -55,6 +55,7 @@ namespace RooBatchCompute {
+     virtual RooSpan<double> computeNovosibirsk(const RooAbsReal*, RunContext&, RooSpan<const double> x, RooSpan<const double> peak, RooSpan<const double> width, RooSpan<const double> tail) = 0;
+     virtual RooSpan<double> computePoisson(const RooAbsReal*, RunContext&, RooSpan<const double> x, RooSpan<const double> mean, bool protectNegative, bool noRounding) = 0;
+     virtual void computePolynomial(size_t batchSize, double * __restrict output, const double * __restrict const xData, int lowestOrder, std::vector<BracketAdapterWithMask> &coef) = 0;
++    virtual RooSpan<double> computePowerLaw(const RooAbsReal*, RunContext&, RooSpan<const double> x, RooSpan<const double> c) = 0;
+     virtual RooSpan<double> computeVoigtian(const RooAbsReal*, RunContext&, RooSpan<const double> x, RooSpan<const double> mean, RooSpan<const double> width, RooSpan<const double> sigma) = 0;
+   };
+ 
+diff --git a/roofit/batchcompute/src/RooBatchCompute.cxx b/roofit/batchcompute/src/RooBatchCompute.cxx
+index 04d8637533..089d9279f5 100644
+--- a/roofit/batchcompute/src/RooBatchCompute.cxx
++++ b/roofit/batchcompute/src/RooBatchCompute.cxx
+@@ -614,6 +614,18 @@ namespace RooBatchCompute {
+       }
+     }
+ 
++//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
++
++    struct PowerLawComputer {
++      template<class Tx, class Tc>
++      void run(size_t n, double* __restrict output, Tx x, Tc c) const
++      {
++        for (size_t i = 0; i < n; ++i) {
++          output[i] = std::pow(x[i], c[i]);
++        }
++      }
++    };
++
+ //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ 
+     struct VoigtianComputer {
+@@ -754,6 +766,9 @@ namespace RooBatchCompute {
+         void computePolynomial(size_t batchSize, double* __restrict output, const double* __restrict const X, int lowestOrder, std::vector<BracketAdapterWithMask>& coefList)  override {
+           startComputationPolynomial(batchSize, output, X, lowestOrder, coefList);
+         }
++        RooSpan<double> computePowerLaw(const RooAbsReal* caller, RunContext& evalData, RooSpan<const double> x, RooSpan<const double> c)  override {
++          return startComputation(caller, evalData, PowerLawComputer{}, x, c);
++        }
+         RooSpan<double> computeVoigtian(const RooAbsReal* caller, RunContext& evalData, RooSpan<const double> x, RooSpan<const double> mean, RooSpan<const double> width, RooSpan<const double> sigma)  override {
+           return startComputation(caller, evalData, VoigtianComputer{}, x, mean, width, sigma);
+         }
+diff --git a/roofit/roofit/CMakeLists.txt b/roofit/roofit/CMakeLists.txt
+index ec00c119f8..2b1d1f6de8 100644
+--- a/roofit/roofit/CMakeLists.txt
++++ b/roofit/roofit/CMakeLists.txt
+@@ -60,6 +60,7 @@ ROOT_STANDARD_LIBRARY_PACKAGE(RooFit
+     RooParamHistFunc.h
+     RooPoisson.h
+     RooPolynomial.h
++    RooPowerLaw.h
+     RooStepFunction.h
+     RooTFnBinding.h
+     RooTFnPdfBinding.h
+@@ -120,6 +121,7 @@ ROOT_STANDARD_LIBRARY_PACKAGE(RooFit
+     src/RooParamHistFunc.cxx
+     src/RooPoisson.cxx
+     src/RooPolynomial.cxx
++    src/RooPowerLaw.cxx
+     src/RooStepFunction.cxx
+     src/RooTFnBinding.cxx
+     src/RooTFnPdfBinding.cxx
+diff --git a/roofit/roofit/inc/LinkDef1.h b/roofit/roofit/inc/LinkDef1.h
+index 77c410765c..3971d56f9b 100644
+--- a/roofit/roofit/inc/LinkDef1.h
++++ b/roofit/roofit/inc/LinkDef1.h
+@@ -33,6 +33,7 @@
+ #pragma link C++ class RooParamHistFunc+ ;
+ #pragma link C++ class RooParametricStepFunction+ ;
+ #pragma link C++ class RooPolynomial+ ;
++#pragma link C++ class RooPowerLaw+ ;
+ #pragma link C++ class RooUnblindCPAsymVar+ ;
+ #pragma link C++ class RooUnblindOffset+ ;
+ #pragma link C++ class RooUnblindPrecision+ ;
+diff --git a/roofit/roofit/inc/RooPowerLaw.h b/roofit/roofit/inc/RooPowerLaw.h
+new file mode 100644
+index 0000000000..89b7411ea3
+--- /dev/null
++++ b/roofit/roofit/inc/RooPowerLaw.h
+@@ -0,0 +1,48 @@
++/*****************************************************************************
++ * Project: RooFit                                                           *
++ * Package: RooFitModels                                                     *
++ *    File: $Id: RooPowerLaw.h,v 1.10 2007/07/12 20:30:49 wouter Exp $
++ * Authors:                                                                  *
++ *   WV, Wouter Verkerke, UC Santa Barbara, verkerke@slac.stanford.edu       *
++ *   DK, David Kirkby,    UC Irvine,         dkirkby@uci.edu                 *
++ *                                                                           *
++ * Copyright (c) 2000-2005, Regents of the University of California          *
++ *                          and Stanford University. All rights reserved.    *
++ *                                                                           *
++ * Redistribution and use in source and binary forms,                        *
++ * with or without modification, are permitted according to the terms        *
++ * listed in LICENSE (http://roofit.sourceforge.net/license.txt)             *
++ *****************************************************************************/
++#ifndef ROO_POWERLAW
++#define ROO_POWERLAW
++
++#include "RooAbsPdf.h"
++#include "RooRealProxy.h"
++
++class RooRealVar;
++class RooAbsReal;
++
++class RooPowerLaw : public RooAbsPdf {
++public:
++  RooPowerLaw() {} ;
++  RooPowerLaw(const char *name, const char *title,
++       RooAbsReal& _x, RooAbsReal& _c);
++  RooPowerLaw(const RooPowerLaw& other, const char* name=0);
++  virtual TObject* clone(const char* newname) const override { return new RooPowerLaw(*this,newname); }
++  inline virtual ~RooPowerLaw() { }
++
++  Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const override;
++  Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const override;
++
++protected:
++  RooRealProxy x;
++  RooRealProxy c;
++
++  Double_t evaluate() const override;
++  RooSpan<double> evaluateSpan(RooBatchCompute::RunContext& evalData, const RooArgSet* normSet) const override;
++
++private:
++  ClassDefOverride(RooPowerLaw,1) // PowerLaw PDF
++};
++
++#endif
+\ No newline at end of file
+diff --git a/roofit/roofit/src/RooPowerLaw.cxx b/roofit/roofit/src/RooPowerLaw.cxx
+new file mode 100644
+index 0000000000..b755758dd2
+--- /dev/null
++++ b/roofit/roofit/src/RooPowerLaw.cxx
+@@ -0,0 +1,94 @@
++/*****************************************************************************
++ * Project: RooFit                                                           *
++ * Package: RooFitModels                                                     *
++ * @(#)root/roofit:$Id$
++ * Authors:                                                                  *
++ *   WV, Wouter Verkerke, UC Santa Barbara, verkerke@slac.stanford.edu       *
++ *   DK, David Kirkby,    UC Irvine,         dkirkby@uci.edu                 *
++ *                                                                           *
++ * Copyright (c) 2000-2005, Regents of the University of California          *
++ *                          and Stanford University. All rights reserved.    *
++ *                                                                           *
++ * Redistribution and use in source and binary forms,                        *
++ * with or without modification, are permitted according to the terms        *
++ * listed in LICENSE (http://roofit.sourceforge.net/license.txt)             *
++ *****************************************************************************/
++
++/** \class RooPowerLaw
++    \ingroup Roofit
++
++Power law PDF. It computes
++\f[
++  \mathrm{RooPowerLaw}(x, n) = \mathcal{N} \cdot x^n,
++\f]
++where \f$ \mathcal{N} \f$ is a normalisation constant that depends on the
++range and values of the arguments.
++
++Note: Adapted from RooExponential for RDX run 2 analysis.
++**/
++
++#include "RooPowerLaw.h"
++
++#include "RooRealVar.h"
++#include "RooBatchCompute.h"
++
++
++#include <cmath>
++
++ClassImp(RooPowerLaw);
++
++////////////////////////////////////////////////////////////////////////////////
++
++RooPowerLaw::RooPowerLaw(const char *name, const char *title,
++                RooAbsReal& _x, RooAbsReal& _c) :
++  RooAbsPdf(name, title),
++  x("x","Dependent",this,_x),
++  c("c","Exponent",this,_c)
++{
++}
++
++////////////////////////////////////////////////////////////////////////////////
++
++RooPowerLaw::RooPowerLaw(const RooPowerLaw& other, const char* name) :
++  RooAbsPdf(other, name), x("x",this,other.x), c("c",this,other.c)
++{
++}
++
++////////////////////////////////////////////////////////////////////////////////
++
++Double_t RooPowerLaw::evaluate() const{
++  return std::pow(x, c);
++}
++
++////////////////////////////////////////////////////////////////////////////////
++
++Int_t RooPowerLaw::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* /*rangeName*/) const
++{
++  if (matchArgs(allVars,analVars,x)) return 1;
++  return 0 ;
++}
++
++////////////////////////////////////////////////////////////////////////////////
++
++Double_t RooPowerLaw::analyticalIntegral(Int_t code, const char* rangeName) const
++{
++  assert(code == 1);
++
++  auto& constant  = c;
++  auto& integrand = x;
++
++  if (constant == 0.0) {
++    return integrand.max(rangeName) - integrand.min(rangeName);
++  }
++
++  auto k = constant + 1.;
++
++  return (std::pow(integrand.max(rangeName), k) - std::pow(integrand.min(rangeName), k))
++      / k;
++}
++
++////////////////////////////////////////////////////////////////////////////////
++/// Compute multiple values of Exponential distribution.
++RooSpan<double> RooPowerLaw::evaluateSpan(RooBatchCompute::RunContext& evalData, const RooArgSet* normSet) const {
++  return RooBatchCompute::dispatch->computePowerLaw(this, evalData, x->getValues(evalData, normSet), c->getValues(evalData, normSet));
++}
+\ No newline at end of file
