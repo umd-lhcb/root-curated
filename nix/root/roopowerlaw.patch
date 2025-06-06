@@ -1,17 +1,17 @@
 diff --git a/roofit/batchcompute/inc/RooBatchCompute.h b/roofit/batchcompute/inc/RooBatchCompute.h
-index da3dd9c8e0..1239eb60f9 100644
+index da3dd9c8e0..0a81c98153 100644
 --- a/roofit/batchcompute/inc/RooBatchCompute.h
 +++ b/roofit/batchcompute/inc/RooBatchCompute.h
 @@ -55,6 +55,7 @@ namespace RooBatchCompute {
      virtual RooSpan<double> computeNovosibirsk(const RooAbsReal*, RunContext&, RooSpan<const double> x, RooSpan<const double> peak, RooSpan<const double> width, RooSpan<const double> tail) = 0;
      virtual RooSpan<double> computePoisson(const RooAbsReal*, RunContext&, RooSpan<const double> x, RooSpan<const double> mean, bool protectNegative, bool noRounding) = 0;
      virtual void computePolynomial(size_t batchSize, double * __restrict output, const double * __restrict const xData, int lowestOrder, std::vector<BracketAdapterWithMask> &coef) = 0;
-+    virtual RooSpan<double> computePowerLaw(const RooAbsReal*, RunContext&, RooSpan<const double> x, RooSpan<const double> c) = 0;
++    virtual RooSpan<double> computePowerLaw(const RooAbsReal*, RunContext&, RooSpan<const double> x, RooSpan<const double> x0, RooSpan<const double> c) = 0;
      virtual RooSpan<double> computeVoigtian(const RooAbsReal*, RunContext&, RooSpan<const double> x, RooSpan<const double> mean, RooSpan<const double> width, RooSpan<const double> sigma) = 0;
    };
  
 diff --git a/roofit/batchcompute/src/RooBatchCompute.cxx b/roofit/batchcompute/src/RooBatchCompute.cxx
-index 04d8637533..089d9279f5 100644
+index 04d8637533..f58a7ecb1b 100644
 --- a/roofit/batchcompute/src/RooBatchCompute.cxx
 +++ b/roofit/batchcompute/src/RooBatchCompute.cxx
 @@ -614,6 +614,18 @@ namespace RooBatchCompute {
@@ -21,11 +21,11 @@ index 04d8637533..089d9279f5 100644
 +//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 +
 +    struct PowerLawComputer {
-+      template<class Tx, class Tc>
-+      void run(size_t n, double* __restrict output, Tx x, Tc c) const
++      template<class Tx, class Tx0, class Tc>
++      void run(size_t n, double* __restrict output, Tx x, Tx0 x0, Tc c) const
 +      {
 +        for (size_t i = 0; i < n; ++i) {
-+          output[i] = std::pow(x[i], c[i]);
++          output[i] = std::pow(x[i]-x0[i], c[i]);
 +        }
 +      }
 +    };
@@ -37,8 +37,8 @@ index 04d8637533..089d9279f5 100644
          void computePolynomial(size_t batchSize, double* __restrict output, const double* __restrict const X, int lowestOrder, std::vector<BracketAdapterWithMask>& coefList)  override {
            startComputationPolynomial(batchSize, output, X, lowestOrder, coefList);
          }
-+        RooSpan<double> computePowerLaw(const RooAbsReal* caller, RunContext& evalData, RooSpan<const double> x, RooSpan<const double> c)  override {
-+          return startComputation(caller, evalData, PowerLawComputer{}, x, c);
++        RooSpan<double> computePowerLaw(const RooAbsReal* caller, RunContext& evalData, RooSpan<const double> x, RooSpan<const double> x0, RooSpan<const double> c)  override {
++          return startComputation(caller, evalData, PowerLawComputer{}, x, x0, c);
 +        }
          RooSpan<double> computeVoigtian(const RooAbsReal* caller, RunContext& evalData, RooSpan<const double> x, RooSpan<const double> mean, RooSpan<const double> width, RooSpan<const double> sigma)  override {
            return startComputation(caller, evalData, VoigtianComputer{}, x, mean, width, sigma);
@@ -77,10 +77,10 @@ index 77c410765c..3971d56f9b 100644
  #pragma link C++ class RooUnblindPrecision+ ;
 diff --git a/roofit/roofit/inc/RooPowerLaw.h b/roofit/roofit/inc/RooPowerLaw.h
 new file mode 100644
-index 0000000000..89b7411ea3
+index 0000000000..f13816bca0
 --- /dev/null
 +++ b/roofit/roofit/inc/RooPowerLaw.h
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,49 @@
 +/*****************************************************************************
 + * Project: RooFit                                                           *
 + * Package: RooFitModels                                                     *
@@ -109,7 +109,7 @@ index 0000000000..89b7411ea3
 +public:
 +  RooPowerLaw() {} ;
 +  RooPowerLaw(const char *name, const char *title,
-+       RooAbsReal& _x, RooAbsReal& _c);
++       RooAbsReal& _x, RooAbsReal& _x0, RooAbsReal& _c);
 +  RooPowerLaw(const RooPowerLaw& other, const char* name=0);
 +  virtual TObject* clone(const char* newname) const override { return new RooPowerLaw(*this,newname); }
 +  inline virtual ~RooPowerLaw() { }
@@ -119,6 +119,7 @@ index 0000000000..89b7411ea3
 +
 +protected:
 +  RooRealProxy x;
++  RooRealProxy x0;
 +  RooRealProxy c;
 +
 +  Double_t evaluate() const override;
@@ -132,10 +133,10 @@ index 0000000000..89b7411ea3
 \ No newline at end of file
 diff --git a/roofit/roofit/src/RooPowerLaw.cxx b/roofit/roofit/src/RooPowerLaw.cxx
 new file mode 100644
-index 0000000000..b755758dd2
+index 0000000000..81a2c972de
 --- /dev/null
 +++ b/roofit/roofit/src/RooPowerLaw.cxx
-@@ -0,0 +1,94 @@
+@@ -0,0 +1,95 @@
 +/*****************************************************************************
 + * Project: RooFit                                                           *
 + * Package: RooFitModels                                                     *
@@ -157,7 +158,7 @@ index 0000000000..b755758dd2
 +
 +Power law PDF. It computes
 +\f[
-+  \mathrm{RooPowerLaw}(x, n) = \mathcal{N} \cdot x^n,
++  \mathrm{RooPowerLaw}(x, x_0, c) = \mathcal{N} \cdot (x - x_0)^c,
 +\f]
 +where \f$ \mathcal{N} \f$ is a normalisation constant that depends on the
 +range and values of the arguments.
@@ -178,9 +179,10 @@ index 0000000000..b755758dd2
 +////////////////////////////////////////////////////////////////////////////////
 +
 +RooPowerLaw::RooPowerLaw(const char *name, const char *title,
-+                RooAbsReal& _x, RooAbsReal& _c) :
++                RooAbsReal& _x, RooAbsReal& _x0, RooAbsReal& _c) :
 +  RooAbsPdf(name, title),
 +  x("x","Dependent",this,_x),
++  x0("x0","Shift",this,_x0),
 +  c("c","Exponent",this,_c)
 +{
 +}
@@ -188,14 +190,14 @@ index 0000000000..b755758dd2
 +////////////////////////////////////////////////////////////////////////////////
 +
 +RooPowerLaw::RooPowerLaw(const RooPowerLaw& other, const char* name) :
-+  RooAbsPdf(other, name), x("x",this,other.x), c("c",this,other.c)
++  RooAbsPdf(other, name), x("x",this,other.x), x0("x0",this,other.x0), c("c",this,other.c)
 +{
 +}
 +
 +////////////////////////////////////////////////////////////////////////////////
 +
 +Double_t RooPowerLaw::evaluate() const{
-+  return std::pow(x, c);
++  return std::pow(x - x0, c);
 +}
 +
 +////////////////////////////////////////////////////////////////////////////////
@@ -215,19 +217,19 @@ index 0000000000..b755758dd2
 +  auto& constant  = c;
 +  auto& integrand = x;
 +
-+  if (constant == 0.0) {
-+    return integrand.max(rangeName) - integrand.min(rangeName);
++  if (constant == -1.0) {
++    return std::log(integrand.max(rangeName) - x0) - std::log(integrand.min(rangeName) - x0);
 +  }
 +
 +  auto k = constant + 1.;
 +
-+  return (std::pow(integrand.max(rangeName), k) - std::pow(integrand.min(rangeName), k))
++  return (std::pow(integrand.max(rangeName) - x0, k) - std::pow(integrand.min(rangeName) - x0, k))
 +      / k;
 +}
 +
 +////////////////////////////////////////////////////////////////////////////////
 +/// Compute multiple values of Exponential distribution.
 +RooSpan<double> RooPowerLaw::evaluateSpan(RooBatchCompute::RunContext& evalData, const RooArgSet* normSet) const {
-+  return RooBatchCompute::dispatch->computePowerLaw(this, evalData, x->getValues(evalData, normSet), c->getValues(evalData, normSet));
++  return RooBatchCompute::dispatch->computePowerLaw(this, evalData, x->getValues(evalData, normSet), x0->getValues(evalData, normSet), c->getValues(evalData, normSet));
 +}
 \ No newline at end of file
