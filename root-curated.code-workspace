@@ -8,8 +8,7 @@
             "ms-python.python",
             "ms-python.vscode-pylance",
             "ms-vscode.cpptools",
-            "twxs.cmake",
-            "trond-snekvik.simple-rst",
+            "ms-vscode.makefile-tools",
             "davidanson.vscode-markdownlint",
             "streetsidesoftware.code-spell-checker",
             "bbenoist.Nix"
