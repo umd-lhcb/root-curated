@@ -106,6 +106,7 @@ stdenv.mkDerivation rec {
     "-Droot7=OFF"
     "-Dsqlite=OFF"
     "-Dssl=OFF"
+    "-Dunfold=ON"
     "-Dwebgui=OFF"
     "-Dxrootd=OFF"
   ]
