@@ -130,7 +130,7 @@ index 00000000000..f249f68b29f
 +#endif
 diff --git a/roofit/roofit/src/RooPowerLaw.cxx b/roofit/roofit/src/RooPowerLaw.cxx
 new file mode 100644
-index 00000000000..590ee619f79
+index 00000000000..e321697e988
 --- /dev/null
 +++ b/roofit/roofit/src/RooPowerLaw.cxx
 @@ -0,0 +1,113 @@
@@ -202,11 +202,11 @@ index 00000000000..590ee619f79
 +}
 +
 +////////////////////////////////////////////////////////////////////////////////
-+/// Compute multiple values of Exponential distribution.
++/// Compute multiple values of PowerLaw distribution.
 +void RooPowerLaw::doEval(RooFit::EvalContext &ctx) const
 +{
-+   auto computer = RooBatchCompute::Exponential;
-+   RooBatchCompute::compute(ctx.config(this), computer, ctx.output(), {ctx.at(x), ctx.at(c)});
++   auto computer = RooBatchCompute::PowerLaw;
++   RooBatchCompute::compute(ctx.config(this), computer, ctx.output(), {ctx.at(x), ctx.at(x0), ctx.at(c)});
 +}
 +
 +////////////////////////////////////////////////////////////////////////////////
