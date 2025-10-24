@@ -66,6 +66,7 @@ stdenv.mkDerivation rec {
     # ./hist_factory.patch  # Not sure if still necessary
     # ./fix_file_read.patch # Unecessary with root v6.30+
     ./roopowerlaw.patch     # Unecessary with root v6.30+, but RooPowerSum not identical so keep it for now
+    ./rookeyspdf.patch
     # Patch below taken from root master (https://github.com/root-project/root/pull/20988), not yet tagged for release as of v6.38
     ./extend_th3_interpolate.patch
   ];
