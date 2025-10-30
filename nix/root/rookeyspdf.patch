@@ -1,10 +1,13 @@
 diff --git a/roofit/roofit/inc/RooKeysPdf.h b/roofit/roofit/inc/RooKeysPdf.h
-index df0e41232e4..9d5c0456e53 100644
+index df0e41232e4..a54f5270c15 100644
 --- a/roofit/roofit/inc/RooKeysPdf.h
 +++ b/roofit/roofit/inc/RooKeysPdf.h
-@@ -3,8 +3,9 @@
+@@ -1,10 +1,11 @@
+ /*****************************************************************************
+  * Project: RooFit                                                           *
   * Package: RooFitModels                                                     *
-  *    File: $Id: RooKeysPdf.h,v 1.10 2007/05/11 09:13:07 verkerke Exp $
+- *    File: $Id: RooKeysPdf.h,v 1.10 2007/05/11 09:13:07 verkerke Exp $
++ *    File: $Id: RooKeysPdf.h,v 1.10 2007/05/11 09:13:07 verkerke Exp $      *
   * Authors:                                                                  *
 - *   GR, Gerhard Raven,   UC San Diego,        raven@slac.stanford.edu       *
 - *   DK, David Kirkby,    UC Irvine,         dkirkby@uci.edu                 * WV, Wouter Verkerke, UC Santa Barbara, verkerke@slac.stanford.edu       *
@@ -14,7 +17,15 @@ index df0e41232e4..9d5c0456e53 100644
   *                                                                           *
   * Copyright (c) 2000-2005, Regents of the University of California          *
   *                          and Stanford University. All rights reserved.    *
-@@ -23,61 +24,65 @@ class RooRealVar;
+@@ -16,6 +17,7 @@
+ #ifndef ROO_KEYS
+ #define ROO_KEYS
+ 
++#include <vector>
+ #include "RooAbsPdf.h"
+ #include "RooRealProxy.h"
+ 
+@@ -23,61 +25,68 @@ class RooRealVar;
  
  class RooKeysPdf : public RooAbsPdf {
  public:
@@ -44,10 +55,11 @@ index df0e41232e4..9d5c0456e53 100644
 +      MirrorAsymBoth
 +   };
 +   RooKeysPdf();
-+   RooKeysPdf(const char *name, const char *title, RooAbsReal &x, RooRealVar &x0, RooRealVar &slope, RooRealVar &offset,
-+              RooDataSet &data, Mirror mirror = NoMirror, double rho = 1);
-+   RooKeysPdf(const char *name, const char *title, RooAbsReal &x, RooRealVar &xdata, RooRealVar &x0, RooRealVar &slope,
-+              RooRealVar &offset, RooDataSet &data, Mirror mirror = NoMirror, double rho = 1);
++   RooKeysPdf(const char *name, const char *title, RooAbsReal &x, RooAbsReal &x0, RooAbsReal &slope, RooAbsReal &offset,
++              RooDataSet &data, Mirror mirror = NoMirror, double rho = 1, bool fast = false, int nPoints = 1000);
++   RooKeysPdf(const char *name, const char *title, RooAbsReal &x, RooRealVar &xdata, RooAbsReal &x0, RooAbsReal &slope,
++              RooAbsReal &offset, RooDataSet &data, Mirror mirror = NoMirror, double rho = 1, bool fast = false,
++              int nPoints = 1000);
 +   RooKeysPdf(const RooKeysPdf &other, const char *name = nullptr);
 +   TObject *clone(const char *newname) const override { return new RooKeysPdf(*this, newname); }
 +   ~RooKeysPdf() override;
@@ -79,7 +91,7 @@ index df0e41232e4..9d5c0456e53 100644
 -  static const double _nSigma; //!
 +   // how far you have to go out in a Gaussian until it is smaller than the
 +   // machine precision
-+   static const double _nSigma; //!
++   const double _nSigma = std::sqrt(-2. * std::log(std::numeric_limits<double>::epsilon()));
  
 -  Int_t _nEvents = 0;
 -  double *_dataPts = nullptr;  //[_nEvents]
@@ -94,20 +106,21 @@ index df0e41232e4..9d5c0456e53 100644
  
 -  constexpr static int _nPoints{1000};
 -  double _lookupTable[_nPoints+1];
-+   constexpr static int _nPoints{1000};
-+   double _lookupTable[_nPoints + 1];
++   int _nPoints;
++   std::vector<double> _lookupTable;
  
 -  double g(double x,double sigma) const;
 +   double g(double x, double sigma) const;
++   double interpolate_table(const double &x, const std::vector<double> &table) const;
  
 -  bool _mirrorLeft = false;
 -  bool _mirrorRight = false;
 -  bool _asymLeft = false;
 -  bool _asymRight = false;
-+   bool _mirrorLeft = false;
-+   bool _mirrorRight = false;
-+   bool _asymLeft = false;
-+   bool _asymRight = false;
++   bool _mirrorLeft;
++   bool _mirrorRight;
++   bool _asymLeft;
++   bool _asymRight;
  
 -  // cached info on variable
 -  Char_t _varName[128];
@@ -117,6 +130,7 @@ index df0e41232e4..9d5c0456e53 100644
 +   Char_t _varName[128];
 +   double _lo, _hi, _binWidth;
 +   double _rho;
++   bool _fast;
  
 -  ClassDefOverride(RooKeysPdf,2) // One-dimensional non-parametric kernel estimation p.d.f.
 +   ClassDefOverride(RooKeysPdf, 2) // One-dimensional non-parametric kernel estimation p.d.f.
@@ -124,28 +138,46 @@ index df0e41232e4..9d5c0456e53 100644
  
  #endif
 diff --git a/roofit/roofit/src/RooKeysPdf.cxx b/roofit/roofit/src/RooKeysPdf.cxx
-index 5361e4b3425..e234c1f19d6 100644
+index 5361e4b3425..84187b8cf13 100644
 --- a/roofit/roofit/src/RooKeysPdf.cxx
 +++ b/roofit/roofit/src/RooKeysPdf.cxx
-@@ -46,8 +46,7 @@ Cranmer KS, Kernel Estimation in High-Energy Physics.
+@@ -1,7 +1,7 @@
+ /*****************************************************************************
+  * Project: RooFit                                                           *
+  * Package: RooFitModels                                                     *
+- * @(#)root/roofit:$Id$
++ * @(#)root/roofit:$Id$                                                      *
+  * Authors:                                                                  *
+  *   GR, Gerhard Raven,   UC San Diego,        raven@slac.stanford.edu       *
+  *   DK, David Kirkby,    UC Irvine,         dkirkby@uci.edu                 *
+@@ -21,7 +21,7 @@
+ Class RooKeysPdf implements a one-dimensional kernel estimation p.d.f which model the distribution
+ of an arbitrary input dataset as a superposition of Gaussian kernels, one for each data point,
+ each contributing 1/N to the total integral of the pdf.
+-If the 'adaptive mode' is enabled, the width of the Gaussian is adaptively calculated from the
++The width of the Gaussian is adaptively calculated from the
+ local density of events, i.e. narrow for regions with high event density to preserve details and
+ wide for regions with low event density to promote smoothness. The details of the general algorithm
+ are described in the following paper:
+@@ -46,9 +46,6 @@ Cranmer KS, Kernel Estimation in High-Energy Physics.
  
  ClassImp(RooKeysPdf);
  
 -const double RooKeysPdf::_nSigma = std::sqrt(-2. *
 -    std::log(std::numeric_limits<double>::epsilon()));
-+const double RooKeysPdf::_nSigma = std::sqrt(-2. * std::log(std::numeric_limits<double>::epsilon()));
- 
+-
  ////////////////////////////////////////////////////////////////////////////////
  /// coverity[UNINIT_CTOR]
-@@ -60,18 +59,22 @@ RooKeysPdf::RooKeysPdf()
+ 
+@@ -60,18 +57,25 @@ RooKeysPdf::RooKeysPdf()
  ////////////////////////////////////////////////////////////////////////////////
  /// cache stuff about x
  
 -RooKeysPdf::RooKeysPdf(const char *name, const char *title, RooAbsReal &x, RooDataSet &data, Mirror mirror, double rho)
 -   : RooKeysPdf(name, title, x, static_cast<RooRealVar &>(x), data, mirror, rho)
-+RooKeysPdf::RooKeysPdf(const char *name, const char *title, RooAbsReal &x, RooRealVar &x0, RooRealVar &slope,
-+                       RooRealVar &offset, RooDataSet &data, Mirror mirror, double rho)
-+   : RooKeysPdf(name, title, x, static_cast<RooRealVar &>(x), x0, slope, offset, data, mirror, rho)
++RooKeysPdf::RooKeysPdf(const char *name, const char *title, RooAbsReal &x, RooAbsReal &x0, RooAbsReal &slope,
++                       RooAbsReal &offset, RooDataSet &data, Mirror mirror, double rho, bool fast, int nPoints)
++   : RooKeysPdf(name, title, x, static_cast<RooRealVar &>(x), x0, slope, offset, data, mirror, rho, fast, nPoints)
  {
  }
  
@@ -154,19 +186,26 @@ index 5361e4b3425..e234c1f19d6 100644
  
 -RooKeysPdf::RooKeysPdf(const char *name, const char *title, RooAbsReal &xpdf, RooRealVar &xdata, RooDataSet &data,
 -                       Mirror mirror, double rho)
-+RooKeysPdf::RooKeysPdf(const char *name, const char *title, RooAbsReal &xpdf, RooRealVar &xdata, RooRealVar &x0,
-+                       RooRealVar &slope, RooRealVar &offset, RooDataSet &data, Mirror mirror, double rho)
++RooKeysPdf::RooKeysPdf(const char *name, const char *title, RooAbsReal &xpdf, RooRealVar &xdata, RooAbsReal &x0,
++                       RooAbsReal &slope, RooAbsReal &offset, RooDataSet &data, Mirror mirror, double rho, bool fast,
++                       int nPoints)
     : RooAbsPdf(name, title),
       _x("x", "Observable", this, xpdf),
 +     _x0("x0", "Fixed point", this, x0),
 +     _slope("slope", "Slope", this, slope),
 +     _offset("offset", "Offset", this, offset),
++     _nPoints(nPoints),
++     _lookupTable(_nPoints + 1, 0.),
       _mirrorLeft(mirror == MirrorLeft || mirror == MirrorBoth || mirror == MirrorLeftAsymRight),
       _mirrorRight(mirror == MirrorRight || mirror == MirrorBoth || mirror == MirrorAsymLeftRight),
       _asymLeft(mirror == MirrorAsymLeft || mirror == MirrorAsymLeftRight || mirror == MirrorAsymBoth),
-@@ -81,11 +84,11 @@ RooKeysPdf::RooKeysPdf(const char *name, const char *title, RooAbsReal &xpdf, Ro
+@@ -79,13 +83,14 @@ RooKeysPdf::RooKeysPdf(const char *name, const char *title, RooAbsReal &xpdf, Ro
+      _lo(xdata.getMin()),
+      _hi(xdata.getMax()),
       _binWidth((_hi - _lo) / (_nPoints - 1)),
-      _rho(rho)
+-     _rho(rho)
++     _rho(rho),
++     _fast(fast)
  {
 -  snprintf(_varName, 128,"%s", xdata.GetName());
 +   snprintf(_varName, 128, "%s", xdata.GetName());
@@ -180,7 +219,7 @@ index 5361e4b3425..e234c1f19d6 100644
  }
  
  ////////////////////////////////////////////////////////////////////////////////
-@@ -93,6 +96,9 @@ RooKeysPdf::RooKeysPdf(const char *name, const char *title, RooAbsReal &xpdf, Ro
+@@ -93,7 +98,12 @@ RooKeysPdf::RooKeysPdf(const char *name, const char *title, RooAbsReal &xpdf, Ro
  RooKeysPdf::RooKeysPdf(const RooKeysPdf &other, const char *name)
     : RooAbsPdf(other, name),
       _x("x", this, other._x),
@@ -188,11 +227,18 @@ index 5361e4b3425..e234c1f19d6 100644
 +     _slope("slope", this, other._slope),
 +     _offset("offset", this, other._offset),
       _nEvents(other._nEvents),
++     _nPoints(other._nPoints),
++     _lookupTable(_nPoints + 1, 0.),
       _mirrorLeft(other._mirrorLeft),
       _mirrorRight(other._mirrorRight),
-@@ -103,279 +109,263 @@ RooKeysPdf::RooKeysPdf(const RooKeysPdf &other, const char *name)
+      _asymLeft(other._asymLeft),
+@@ -101,281 +111,328 @@ RooKeysPdf::RooKeysPdf(const RooKeysPdf &other, const char *name)
+      _lo(other._lo),
+      _hi(other._hi),
       _binWidth(other._binWidth),
-      _rho(other._rho)
+-     _rho(other._rho)
++     _rho(other._rho),
++     _fast(other._fast)
  {
 -  // cache stuff about x
 -  snprintf(_varName, 128, "%s", other._varName );
@@ -367,6 +413,7 @@ index 5361e4b3425..e234c1f19d6 100644
 -      const double xhi = std::max(_lo,
 -         std::min(_hi, _dataPts[j] + _nSigma * _weights[j]));
 -      if (xlo >= xhi) continue;
+-      const double chi2incr = _binWidth / _weights[j] / std::sqrt(2.);
 +      if (_mirrorLeft) {
 +         p.x = 2. * _lo - x;
 +         tmp.push_back(p);
@@ -393,15 +440,84 @@ index 5361e4b3425..e234c1f19d6 100644
 +      tmp2.swap(tmp);
 +   }
 +
++   const double sqrt2 = std::sqrt(2.);
++   const double sqrt2pi = std::sqrt(2. * TMath::Pi());
++
 +   double meanv = x1 / x0;
 +   double sigmav = std::sqrt(x2 / x0 - meanv * meanv);
-+   double h = std::pow(double(4) / double(3), 0.2) * std::pow(_sumWgt, -0.2) * _rho;
-+   double hmin = h * sigmav * std::sqrt(2.) / 10;
++   double h = std::pow(4. / 3., 0.2) * std::pow(_sumWgt, -0.2) * _rho;
++   double hmin = h * sigmav * sqrt2 / 10;
 +   double norm = h * std::sqrt(sigmav * _sumWgt) / (2.0 * std::sqrt(3.0));
++
++   // NOTE There are two differences with respect to the paper:
++   // 1) rho is already included in the h_star definition, so it also affects f0
++   // 2) h_i is further scaled by a factor 2*sqrt(3).
++
++   // Build lookup table for f0 if requested
++   std::vector<double> _lookupTable_f0;
++   if (_fast) {
++      _lookupTable_f0 = std::move(std::vector<double>(_nPoints + 1, 0.));
++      const double h_star = h * sigmav;
++      const double chi2incr = _binWidth / (h_star * sqrt2);
++      for (Int_t j = 0; j < _nEvents; ++j) {
++         const double xlo = std::min(_hi, std::max(_lo, _dataPts[j] - _nSigma * h_star));
++         const double xhi = std::max(_lo, std::min(_hi, _dataPts[j] + _nSigma * h_star));
++         if (xlo >= xhi)
++            continue;
++         const double weightratio = _dataWgts[j] / h_star;
++         const Int_t binlo = static_cast<Int_t>(std::floor((xlo - _lo) / _binWidth));
++         const Int_t binhi = static_cast<Int_t>(_nPoints - std::floor((_hi - xhi) / _binWidth));
++         const double x = (double(_nPoints - binlo) * _lo + double(binlo) * _hi) / double(_nPoints);
++         double chi = (x - _dataPts[j]) / (h_star * sqrt2);
++         for (Int_t k = binlo; k <= binhi; ++k, chi += chi2incr) {
++            _lookupTable_f0[k] += weightratio * std::exp(-chi * chi);
++         }
++      }
++      if (_asymLeft) {
++         for (Int_t j = 0; j < _nEvents; ++j) {
++            const double xlo = std::min(_hi, std::max(_lo, 2. * _lo - _dataPts[j] + _nSigma * h_star));
++            const double xhi = std::max(_lo, std::min(_hi, 2. * _lo - _dataPts[j] - _nSigma * h_star));
++            if (xlo >= xhi)
++               continue;
++            const double weightratio = _dataWgts[j] / h_star;
++            const Int_t binlo = static_cast<Int_t>(std::floor((xlo - _lo) / _binWidth));
++            const Int_t binhi = static_cast<Int_t>(_nPoints - std::floor((_hi - xhi) / _binWidth));
++            const double x = (double(_nPoints - binlo) * _lo + double(binlo) * _hi) / double(_nPoints);
++            double chi = (x - (2. * _lo - _dataPts[j])) / (h_star * sqrt2);
++            for (Int_t k = binlo; k <= binhi; ++k, chi += chi2incr) {
++               _lookupTable_f0[k] -= weightratio * std::exp(-chi * chi);
++            }
++         }
++      }
++      if (_asymRight) {
++         for (Int_t j = 0; j < _nEvents; ++j) {
++            const double xlo = std::min(_hi, std::max(_lo, 2. * _hi - _dataPts[j] + _nSigma * h_star));
++            const double xhi = std::max(_lo, std::min(_hi, 2. * _hi - _dataPts[j] - _nSigma * h_star));
++            if (xlo >= xhi)
++               continue;
++            const double weightratio = _dataWgts[j] / h_star;
++            const Int_t binlo = static_cast<Int_t>(std::floor((xlo - _lo) / _binWidth));
++            const Int_t binhi = static_cast<Int_t>(_nPoints - std::floor((_hi - xhi) / _binWidth));
++            const double x = (double(_nPoints - binlo) * _lo + double(binlo) * _hi) / double(_nPoints);
++            double chi = (x - (2. * _hi - _dataPts[j])) / (h_star * sqrt2);
++            for (Int_t k = binlo; k <= binhi; ++k, chi += chi2incr) {
++               _lookupTable_f0[k] -= weightratio * std::exp(-chi * chi);
++            }
++         }
++      }
++
++      // To match the output of g(), the lookup table for f0 does not include the global 1/n factor.
++      for (Int_t i = 0; i < _nPoints + 1; ++i)
++         _lookupTable_f0[i] /= sqrt2pi;
++   }
++
++   // if fast, use table; If not, use g.
 +
 +   _weights = new double[_nEvents];
 +   for (Int_t j = 0; j < _nEvents; ++j) {
-+      _weights[j] = norm / std::sqrt(_dataWgts[j] * g(_dataPts[j], h * sigmav));
++      // f0 here does not include the global 1/n factor
++      const double f0 = _fast ? interpolate_table(_dataPts[j], _lookupTable_f0) : g(_dataPts[j], h * sigmav);
++      _weights[j] = norm / std::sqrt(_dataWgts[j] * f0);
 +      if (_weights[j] < hmin)
 +         _weights[j] = hmin;
 +   }
@@ -410,22 +526,20 @@ index 5361e4b3425..e234c1f19d6 100644
 +   // in the Gaussian is well below the machine precision of a double, so it
 +   // does not contribute any more. That way, we can limit how many bins of the
 +   // binned approximation in _lookupTable we have to touch when filling it.
-+   for (Int_t i = 0; i < _nPoints + 1; ++i)
-+      _lookupTable[i] = 0.;
-+
 +   for (Int_t j = 0; j < _nEvents; ++j) {
 +      const double xlo = std::min(_hi, std::max(_lo, _dataPts[j] - _nSigma * _weights[j]));
 +      const double xhi = std::max(_lo, std::min(_hi, _dataPts[j] + _nSigma * _weights[j]));
 +      if (xlo >= xhi)
 +         continue;
-       const double chi2incr = _binWidth / _weights[j] / std::sqrt(2.);
++      const double chi2incr = _binWidth / (_weights[j] * sqrt2);
        const double weightratio = _dataWgts[j] / _weights[j];
        const Int_t binlo = static_cast<Int_t>(std::floor((xlo - _lo) / _binWidth));
        const Int_t binhi = static_cast<Int_t>(_nPoints - std::floor((_hi - xhi) / _binWidth));
 -      const double x = (double(_nPoints - binlo) * _lo +
 -         double(binlo) * _hi) / double(_nPoints);
+-      double chi = (x - _dataPts[j]) / _weights[j] / std::sqrt(2.);
 +      const double x = (double(_nPoints - binlo) * _lo + double(binlo) * _hi) / double(_nPoints);
-       double chi = (x - _dataPts[j]) / _weights[j] / std::sqrt(2.);
++      double chi = (x - _dataPts[j]) / (_weights[j] * sqrt2);
        for (Int_t k = binlo; k <= binhi; ++k, chi += chi2incr) {
 -     _lookupTable[k] += weightratio * std::exp(- chi * chi);
 +         _lookupTable[k] += weightratio * std::exp(-chi * chi);
@@ -455,12 +569,12 @@ index 5361e4b3425..e234c1f19d6 100644
 +         const double xhi = std::max(_lo, std::min(_hi, 2. * _lo - _dataPts[j] - _nSigma * _weights[j]));
 +         if (xlo >= xhi)
 +            continue;
-+         const double chi2incr = _binWidth / _weights[j] / std::sqrt(2.);
++         const double chi2incr = _binWidth / (_weights[j] * sqrt2);
 +         const double weightratio = _dataWgts[j] / _weights[j];
 +         const Int_t binlo = static_cast<Int_t>(std::floor((xlo - _lo) / _binWidth));
 +         const Int_t binhi = static_cast<Int_t>(_nPoints - std::floor((_hi - xhi) / _binWidth));
 +         const double x = (double(_nPoints - binlo) * _lo + double(binlo) * _hi) / double(_nPoints);
-+         double chi = (x - (2. * _lo - _dataPts[j])) / _weights[j] / std::sqrt(2.);
++         double chi = (x - (2. * _lo - _dataPts[j])) / (_weights[j] * sqrt2);
 +         for (Int_t k = binlo; k <= binhi; ++k, chi += chi2incr) {
 +            _lookupTable[k] -= weightratio * std::exp(-chi * chi);
 +         }
@@ -490,12 +604,12 @@ index 5361e4b3425..e234c1f19d6 100644
 +         const double xhi = std::max(_lo, std::min(_hi, 2. * _hi - _dataPts[j] - _nSigma * _weights[j]));
 +         if (xlo >= xhi)
 +            continue;
-+         const double chi2incr = _binWidth / _weights[j] / std::sqrt(2.);
++         const double chi2incr = _binWidth / (_weights[j] * sqrt2);
 +         const double weightratio = _dataWgts[j] / _weights[j];
 +         const Int_t binlo = static_cast<Int_t>(std::floor((xlo - _lo) / _binWidth));
 +         const Int_t binhi = static_cast<Int_t>(_nPoints - std::floor((_hi - xhi) / _binWidth));
 +         const double x = (double(_nPoints - binlo) * _lo + double(binlo) * _hi) / double(_nPoints);
-+         double chi = (x - (2. * _hi - _dataPts[j])) / _weights[j] / std::sqrt(2.);
++         double chi = (x - (2. * _hi - _dataPts[j])) / (_weights[j] * sqrt2);
 +         for (Int_t k = binlo; k <= binhi; ++k, chi += chi2incr) {
 +            _lookupTable[k] -= weightratio * std::exp(-chi * chi);
 +         }
@@ -505,7 +619,7 @@ index 5361e4b3425..e234c1f19d6 100644
 -  for (Int_t i=0;i<_nPoints+1;++i)
 -    _lookupTable[i] /= sqrt2pi * _sumWgt;
 +   }
-+   static const double sqrt2pi(std::sqrt(2 * TMath::Pi()));
++
 +   for (Int_t i = 0; i < _nPoints + 1; ++i)
 +      _lookupTable[i] /= sqrt2pi * _sumWgt;
  }
@@ -537,36 +651,23 @@ index 5361e4b3425..e234c1f19d6 100644
 -
 -Int_t RooKeysPdf::getAnalyticalIntegral(
 -   RooArgSet& allVars, RooArgSet& analVars, const char* /* rangeName */) const
-+double RooKeysPdf::evaluate() const
++double RooKeysPdf::interpolate_table(const double &x, const std::vector<double> &table) const
  {
 -  if (matchArgs(allVars, analVars, _x)) return 1;
 -  return 0;
-+   const double x = (_x - _x0 - _offset) / _slope + _x0;
-+   Int_t i = (Int_t)floor((double(x) - _lo) / _binWidth);
++   Int_t i = (Int_t)floor((x - _lo) / _binWidth);
 +   if (i < 0) {
-+      //     cerr << "got point below lower bound:"
-+      //     << double(_x) << " < " << _lo
-+      //     << " -- performing linear extrapolation..." << endl;
 +      i = 0;
 +   }
 +   if (i > _nPoints - 1) {
-+      //     cerr << "got point above upper bound:"
-+      //     << double(_x) << " > " << _hi
-+      //     << " -- performing linear extrapolation..." << endl;
 +      i = _nPoints - 1;
 +   }
-+   double dx = (double(x) - (_lo + i * _binWidth)) / _binWidth;
-+
-+   // for now do simple linear interpolation.
-+   // one day replace by splines...
-+   double ret = (_lookupTable[i] + dx * (_lookupTable[i + 1] - _lookupTable[i]));
-+   if (ret < 0)
-+      ret = 0;
-+   return ret;
++   const double dx = (x - (_lo + i * _binWidth)) / _binWidth;
++   return table[i] + dx * (table[i + 1] - table[i]);
  }
  
 -double RooKeysPdf::analyticalIntegral(Int_t code, const char* rangeName) const
-+Int_t RooKeysPdf::getAnalyticalIntegral(RooArgSet &allVars, RooArgSet &analVars, const char * /* rangeName */) const
++double RooKeysPdf::evaluate() const
  {
 -  R__ASSERT(1 == code);
 -  // this code is based on _lookupTable and uses linear interpolation, just as
@@ -604,20 +705,26 @@ index 5361e4b3425..e234c1f19d6 100644
 -   (_lookupTable[imax + 1] - _lookupTable[imax]));
 -  }
 -  return sum;
++   const double x = (_x - _x0 - _offset) / _slope + _x0;
++   double ret = interpolate_table(x, _lookupTable);
++   if (ret < 0)
++      ret = 0;
++   return ret;
+ }
+ 
+-Int_t RooKeysPdf::getMaxVal(const RooArgSet& vars) const
++Int_t RooKeysPdf::getAnalyticalIntegral(RooArgSet &allVars, RooArgSet &analVars, const char * /* rangeName */) const
+ {
+-  if (vars.contains(*_x.absArg())) return 1;
+-  return 0;
 +   if (matchArgs(allVars, analVars, _x))
 +      return 1;
 +   return 0;
  }
  
--Int_t RooKeysPdf::getMaxVal(const RooArgSet& vars) const
+-double RooKeysPdf::maxVal(Int_t code) const
 +double RooKeysPdf::analyticalIntegral(Int_t code, const char *rangeName) const
  {
--  if (vars.contains(*_x.absArg())) return 1;
--  return 0;
--}
--
--double RooKeysPdf::maxVal(Int_t code) const
--{
 -  R__ASSERT(1 == code);
 -  double max = -std::numeric_limits<double>::max();
 -  for (Int_t i = 0; i <= _nPoints; ++i)
