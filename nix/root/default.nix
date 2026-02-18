@@ -66,6 +66,8 @@ stdenv.mkDerivation rec {
     ./hist_factory.patch
     ./fix_file_read.patch
     ./roopowerlaw.patch
+    # Patch below taken from root master (https://github.com/root-project/root/pull/20988), not yet tagged for release as of v6.38
+    ./extend_th3_interpolate.patch
   ];
 
   preConfigure = ''
