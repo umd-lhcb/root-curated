@@ -51,12 +51,12 @@ final: prev:
   roounfold_1_1 = prev.callPackage ./roounfold_1_1 { };
 
   # ROOT 6.32 stack
-  root_6_32_16 = final.root;
+  root_6_32_24 = final.root;
   hammer-phys-w_root_6_32 = prev.callPackage ./hammer-phys {
-    root = final.root_6_32_16;
+    root = final.root_6_32_24;
   };
   roounfold-w_root_6_32 = prev.callPackage ./roounfold {
-    root = final.root_6_32_16;
+    root = final.root_6_32_24;
   };
 
   # ROOT 6.16 stack

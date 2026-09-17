@@ -37,7 +37,7 @@
           inherit (pkgs) vdt git
             # root
             root
-            root_6_32_16
+            root_6_32_24
             root_6_16_00
             root_6_12_06
             root_5_34_38
